@@ -28,16 +28,27 @@ Recommended: add voice-behavior rules to your global `~/.hermes/SOUL.md`
 actions and wait for approval). The agent — not the voice server — should own
 its personality.
 
-## 2. ElevenLabs (the voice)
+Jarvis (API server) uses Hermes `platform_toolsets.api_server` with **web + pc_apps**
+(no live `browser` toolset — find/research stays in chat via `web_search` / `web_find`).
+PC Chrome opens only when the user explicitly asks (`open_pc_app`, gated chrome_* tools).
+Restart `hermes gateway` after changing toolsets.
 
-Create an API key at elevenlabs.io and pick a voice from their library, noting
-its `voice_id`. Add to `~/.hermes/.env`:
+## 2. Kokoro TTS (the voice)
+
+Kokoro runs locally via Docker — no API key needed. From the repo root:
 
 ```bash
-ELEVENLABS_API_KEY=...
+cd worker
+docker compose -f docker-compose.kokoro.yml up -d
+curl http://127.0.0.1:8880/health   # {"status":"healthy"} when ready
 ```
 
-For the HUD's quota bar, give the key the **User → Read** permission.
+On Windows, run `worker\run-kokoro.bat` (local Python Kokoro server on port 8880 —
+no Docker required). Optional Docker alternative: `docker compose -f docker-compose.kokoro.yml up -d`.
+
+First start downloads ~100 MB of model weights. Browse voices at
+`http://127.0.0.1:8880/v1/models` and set `voice.voice` in `server/config/server.yaml`
+(default: `af_heart`).
 
 ## 3. The voice pipeline server (this repo)
 
@@ -54,9 +65,9 @@ releases treat them as optional extras and fail at runtime without them
 (silently for VAD, loudly for the engine). The first start takes 60–90 s
 (torch import + model download); subsequent starts are faster.
 
-Edit `config/server.yaml`: set `voice.voice_id`, and adjust the `machines:`
-list (or delete it). The first run downloads the Whisper model (~460 MB for
-`small.en`).
+Edit `config/server.yaml`: set `voice.voice` (Kokoro voice id), and adjust the
+`machines:` list (or delete it). The first run downloads the Whisper model
+(~460 MB for `small.en`).
 
 ### TLS certificates (required for browser microphone)
 
@@ -84,11 +95,13 @@ echo "JARVIS_HUD_TOKEN=jarvis-$(python3 -c 'import secrets;print(secrets.token_h
 The HUD asks for this once per device. Omit the variable entirely to disable
 auth (not recommended).
 
-### Boot greeting (one-time, ~110 ElevenLabs characters)
+### Boot greeting (one-time)
 
 ```bash
 scripts/make-boot-audio.sh YourFirstName
 ```
+
+Requires Kokoro running on port 8880.
 
 ### Run it
 
@@ -97,7 +110,7 @@ scripts/make-boot-audio.sh YourFirstName
 ```
 
 Wait ~40 s for the STT model to warm, then open `https://YOUR_HOST/hud/`.
-Run `scripts/jarvis-health.sh` to check all five services.
+Run `scripts/jarvis-health.sh` to check all six services.
 
 ## 4. Auto-start on boot (macOS)
 
@@ -164,10 +177,18 @@ break plugin discovery. The agent then has `hud_display` / `hud_dismiss`
 tools; YouTube links play as embedded video, `position` left/right lets it
 fly in multiple panels from different vectors.
 
+### PC apps on the visible Chrome (allowlisted)
+
+Install `hermes-plugin/pc_apps` the same way (`pc_apps` toolset). Jarvis can
+open only allowlisted targets (default: Chrome, YouTube, WhatsApp Web) and
+**only while Chrome CDP is live** after you run `/browser connect` in the
+Hermes CLI on the PC. Edit `D:\jarvis_kokoro\pc_apps_allowlist.yaml` to add
+more sites later, then restart the Hermes gateway.
+
 ## 6. Verify everything
 
 ```bash
-scripts/jarvis-health.sh   # all five rows OK
+scripts/jarvis-health.sh   # all six rows OK
 scripts/jarvis-smoke.sh    # synthesized voice turn through the full stack (macOS)
 ```
 

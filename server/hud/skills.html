@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JARVIS · Skills</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#050b14">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050b14; --panel:#0a1624; --line:#123048;
+  --cyan:#00e5ff; --cyan-dim:#0a7f96; --teal:#19f0d8;
+  --amber:#ffb300; --red:#ff4d5e; --txt:#9fd8e8; --txt-dim:#4d7d92;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%; background:radial-gradient(ellipse at 50% 0%, #0a1a2c 0%, var(--bg) 55%);
+  color:var(--txt); font-family:'Rajdhani',sans-serif}
+body{padding:10px 12px 24px; max-width:560px; margin:0 auto}
+a.back{display:inline-block; font-family:'Orbitron'; font-size:9px; letter-spacing:2px;
+  color:var(--txt-dim); text-decoration:none; margin-bottom:8px}
+a.back:hover{color:var(--cyan)}
+header{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:10px}
+header h1{font-family:'Orbitron'; font-size:15px; letter-spacing:4px; color:var(--cyan)}
+header .sub{font-size:11px; color:var(--txt-dim); letter-spacing:1px}
+.panel{border:1px solid var(--line); background:var(--panel); padding:12px; margin-bottom:10px}
+.hint{font-size:12px; color:var(--txt-dim); line-height:1.4; margin-bottom:10px}
+.field{margin-bottom:8px}
+.field label{display:block; font-size:11px; letter-spacing:1px; color:var(--txt-dim); margin-bottom:3px}
+.field input,.field textarea,.field select{
+  width:100%; background:#06101c; border:1px solid var(--line); color:#cfeefb;
+  font-family:'Rajdhani'; font-size:15px; padding:8px 10px; outline:none;
+}
+.field textarea{min-height:64px; resize:vertical}
+.row{display:flex; gap:8px}
+.btn{
+  background:#0a2435; color:var(--cyan); border:1px solid var(--cyan-dim);
+  font-family:'Orbitron'; font-size:10px; letter-spacing:1.5px; padding:9px 12px; cursor:pointer;
+}
+.btn.teal{color:var(--teal); border-color:#1a6e62}
+.btn.danger{color:var(--red); border-color:#7a2a33; background:#240a0e}
+.btn:hover{box-shadow:0 0 10px #00e5ff33}
+.item{border:1px solid var(--line); background:#06101c; padding:10px; margin-bottom:8px;
+  display:grid; grid-template-columns:1fr auto; gap:8px; align-items:start}
+.item .t{font-size:14px; color:#cfeefb; font-weight:600}
+.item .m{font-size:13px; color:var(--txt); margin-top:3px; white-space:pre-wrap}
+.item .meta{font-size:11px; color:var(--txt-dim); margin-top:4px}
+.badge{display:inline-block; font-size:9px; letter-spacing:1px; padding:1px 5px;
+  border:1px solid var(--line); color:var(--teal); margin-right:4px; text-transform:uppercase}
+.empty{font-size:13px; color:var(--txt-dim); text-align:center; padding:18px 8px}
+.err{color:#ff6b7a; font-size:12px; min-height:1em; margin-top:6px}
+</style>
+</head>
+<body>
+<a class="back" href="./" id="backHud">← HUD</a>
+<header>
+  <h1>SKILLS</h1>
+  <span class="sub" id="stamp">—</span>
+</header>
+
+<div class="panel">
+  <p class="hint">Everything Jarvis remembers — names, preferences, and friend contacts.
+  Add a phone number to call them, an email for Gmail, and/or a WhatsApp name.
+  Gmail send only works for emails you save here.</p>
+  <div class="field"><label>Title</label><input id="fTitle" placeholder="e.g. Best friend / Ali" maxlength="120"></div>
+  <div class="field"><label>Fact / name</label><textarea id="fValue" placeholder="e.g. Ali"></textarea></div>
+  <div class="field"><label>Phone (with country code)</label><input id="fPhone" placeholder="e.g. +965xxxxxxxx" maxlength="24"></div>
+  <div class="field"><label>Email (Gmail / address Jarvis may email)</label><input id="fEmail" placeholder="e.g. ali@gmail.com" maxlength="120"></div>
+  <div class="field"><label>WhatsApp name (as saved in WhatsApp)</label><input id="fWa" placeholder="e.g. Ali 🔥" maxlength="120"></div>
+  <div class="field"><label>Category</label>
+    <select id="fCat">
+      <option value="people">people</option>
+      <option value="personal">personal</option>
+      <option value="school">school</option>
+      <option value="preferences">preferences</option>
+      <option value="other">other</option>
+    </select>
+  </div>
+  <button type="button" class="btn teal" id="btnAdd" style="width:100%">+ REMEMBER</button>
+  <div class="err" id="err"></div>
+</div>
+
+<div class="panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <span style="font-family:Orbitron;font-size:11px;letter-spacing:2px;color:var(--cyan)">MEMORY BANK</span>
+    <span class="sub" id="count">0</span>
+  </div>
+  <div id="list"><div class="empty">No memories yet.</div></div>
+</div>
+
+<script src="/hud/jarvis-auth.js"></script>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+let facts=[];
+
+async function api(path, opts){
+  return jarvisAuth.api(path, opts);
+}
+
+function escapeHtml(s){
+  return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+}
+
+async function load(){
+  const j=await api("/api/memory");
+  facts=j.facts||[];
+  $("count").textContent=facts.length+" facts";
+  $("stamp").textContent=j.updated_at?("upd "+j.updated_at.replace("T"," ").slice(0,16)):"local";
+  render();
+}
+
+function render(){
+  const box=$("list");
+  if(!facts.length){ box.innerHTML=`<div class="empty">No memories yet. Tell Jarvis something important, or add one above.</div>`; return; }
+  box.innerHTML="";
+  facts.forEach(f=>{
+    const el=document.createElement("div"); el.className="item";
+    const bits=[];
+    if(f.phone) bits.push("☎ "+f.phone);
+    if(f.email) bits.push("✉ "+f.email);
+    if(f.whatsapp_name) bits.push("WA: "+f.whatsapp_name);
+    el.innerHTML=`<div>
+      <div class="t"><span class="badge">${escapeHtml(f.category||"personal")}</span>${escapeHtml(f.title||f.key)}</div>
+      <div class="m">${escapeHtml(f.value)}</div>
+      ${bits.length?`<div class="m" style="color:var(--teal)">${escapeHtml(bits.join(" · "))}</div>`:""}
+      <div class="meta">${escapeHtml(f.source||"")} · ${escapeHtml((f.updated_at||f.created_at||"").replace("T"," ").slice(0,16))}</div>
+    </div>
+    <button class="btn danger" type="button">✕</button>`;
+    el.querySelector("button").onclick=async()=>{
+      if(!confirm(`Forget "${f.title||f.key}"?`)) return;
+      await api("/api/memory/"+encodeURIComponent(f.id),{method:"DELETE"});
+      await load();
+    };
+    box.appendChild(el);
+  });
+}
+
+$("btnAdd").onclick=async()=>{
+  $("err").textContent="";
+  const title=$("fTitle").value.trim();
+  const value=$("fValue").value.trim();
+  const phone=$("fPhone").value.trim();
+  const email=$("fEmail").value.trim();
+  const wa=$("fWa").value.trim();
+  if(!value){ $("err").textContent="Fact / name required"; return; }
+  try{
+    await api("/api/memory",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        title:title||value.slice(0,60),
+        value,
+        category:$("fCat").value,
+        phone:phone||null,
+        email:email||null,
+        whatsapp_name:wa||null,
+        source:"hud",
+      }),
+    });
+    $("fTitle").value=""; $("fValue").value=""; $("fPhone").value=""; $("fEmail").value=""; $("fWa").value="";
+    await load();
+  }catch(e){ $("err").textContent=e.message||String(e); }
+};
+
+const backS = document.getElementById("backHud"); if (backS) backS.href = jarvisAuth.withToken("./");
+jarvisAuth.requireAuth().then(ok => {
+  if (!ok) return;
+  load().catch(e=>{ $("list").innerHTML=`<div class="empty">Could not load (${escapeHtml(e.message||e)})</div>`; });
+});
+setInterval(()=>load().catch(()=>{}), 15000);
+</script>
+</body>
+</html>

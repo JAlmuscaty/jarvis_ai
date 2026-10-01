@@ -1,0 +1,87 @@
+# Allowlisted apps/sites Jarvis may open on the phone (via connected HUD).
+# scheme = iOS URL scheme (tried first). url = https fallback / universal link.
+#
+# kind is always "open" for phone.
+
+apps:
+  youtube:
+    label: YouTube
+    url: https://www.youtube.com/
+    scheme: youtube://
+  whatsapp:
+    label: WhatsApp
+    url: https://wa.me/
+    scheme: whatsapp://
+  chatgpt:
+    label: ChatGPT
+    url: https://chatgpt.com/
+  maps:
+    label: Apple Maps
+    url: https://maps.apple.com/
+    scheme: maps://
+  safari:
+    label: Safari
+    url: https://www.google.com/
+  music:
+    label: Apple Music
+    url: https://music.apple.com/
+    scheme: music://
+  instagram:
+    label: Instagram
+    url: https://www.instagram.com/
+    scheme: instagram://
+  tiktok:
+    label: TikTok
+    url: https://www.tiktok.com/
+    scheme: tiktok://
+  twitter:
+    label: X / Twitter
+    url: https://x.com/
+    scheme: twitter://
+  x:
+    label: X / Twitter
+    url: https://x.com/
+    scheme: twitter://
+  spotify:
+    label: Spotify
+    url: https://open.spotify.com/
+    scheme: spotify://
+  netflix:
+    label: Netflix
+    url: https://www.netflix.com/
+    scheme: nflx://
+  gmail:
+    label: Gmail
+    url: https://mail.google.com/
+    scheme: googlegmail://
+  classroom:
+    label: Google Classroom
+    url: https://classroom.google.com/
+  messages:
+    label: Messages
+    scheme: sms://
+  photos:
+    label: Photos
+    scheme: photos-redirect://
+  camera:
+    label: Camera
+    scheme: camera://
+  settings:
+    label: Settings
+    scheme: App-Prefs://
+  phone:
+    label: Phone
+    scheme: tel://
+  calendar:
+    label: Calendar
+    url: https://calendar.google.com/
+    scheme: calshow://
+  reminders:
+    label: Reminders
+    scheme: x-apple-reminderkit://
+  shortcuts:
+    label: Shortcuts
+    scheme: shortcuts://
+  notebooklm:
+    label: NotebookLM
+    url: https://notebooklm.google.com/

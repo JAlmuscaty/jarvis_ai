@@ -36,21 +36,32 @@ import uvicorn
 from fastapi import FastAPI, Request, Response
 from faster_whisper import WhisperModel
 
-MODEL_NAME = os.environ.get("JARVIS_STT_MODEL", "large-v3-turbo")
+MODEL_NAME = os.environ.get("JARVIS_STT_MODEL", "medium")
+# auto | en | ar — auto detects English or Arabic (Kuwaiti dialect speech)
+STT_LANGUAGE = os.environ.get("JARVIS_STT_LANGUAGE", "auto").strip().lower()
 TOKEN = os.environ.get("JARVIS_STT_TOKEN", "")
 PORT = int(os.environ.get("JARVIS_STT_PORT", "8768"))
+# RTX 20-series: prefer int8 (float16 sometimes fails in worker processes)
+COMPUTE = os.environ.get("JARVIS_STT_COMPUTE", "int8").strip() or "int8"
+DEVICE = os.environ.get("JARVIS_STT_DEVICE", "cuda").strip() or "cuda"
+BEAM = int(os.environ.get("JARVIS_STT_BEAM", "5") or "5")
 
-print(f"Loading {MODEL_NAME} on CUDA...", flush=True)
+print(f"Loading {MODEL_NAME} on {DEVICE}/{COMPUTE} (language={STT_LANGUAGE})...", flush=True)
 t0 = time.time()
-model = WhisperModel(MODEL_NAME, device="cuda", compute_type="float16")
-print(f"Model ready in {time.time()-t0:.1f}s", flush=True)
+try:
+    model = WhisperModel(MODEL_NAME, device=DEVICE, compute_type=COMPUTE)
+except Exception as exc:
+    print(f"GPU STT failed ({exc}); falling back to CPU int8", flush=True)
+    DEVICE, COMPUTE = "cpu", "int8"
+    model = WhisperModel(MODEL_NAME, device=DEVICE, compute_type=COMPUTE)
+print(f"Model ready in {time.time()-t0:.1f}s ({DEVICE}/{COMPUTE})", flush=True)
 
 app = FastAPI(title="Jarvis GPU STT")
 
 
 @app.get("/health")
 async def health() -> dict:
-    return {"status": "ok", "model": MODEL_NAME, "device": "cuda"}
+    return {"status": "ok", "model": MODEL_NAME, "device": DEVICE, "compute_type": COMPUTE}
 
 
 @app.post("/stt")
@@ -63,7 +74,20 @@ async def stt(request: Request):
     audio = np.frombuffer(body[: len(body) // 2 * 2], dtype=np.int16).astype(np.float32) / 32768.0
     t0 = time.time()
     try:
-        segments, _info = model.transcribe(audio, language="en", beam_size=1, vad_filter=False)
+        lang = None if STT_LANGUAGE in ("", "auto", "none") else STT_LANGUAGE
+        segments, _info = model.transcribe(
+            audio,
+            language=lang,
+            beam_size=BEAM,
+            vad_filter=False,
+            condition_on_previous_text=False,
+            no_speech_threshold=0.6,
+            compression_ratio_threshold=2.4,
+            initial_prompt=(
+                "Transcribe the user's speech fully and verbatim in English or Kuwaiti Arabic. "
+                "Keep every word; do not shorten. Mixed Arabic-English is normal."
+            ),
+        )
         text = " ".join(s.text.strip() for s in segments).strip()
     except Exception as exc:  # silence/garbage audio -> empty transcript, not a 500
         print(f"transcribe error -> empty: {exc}", flush=True)

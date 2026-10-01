@@ -1,0 +1,4 @@
+sounddevice>=0.4.6
+websockets>=12.0
+numpy>=1.24
+openwakeword>=0.6.0

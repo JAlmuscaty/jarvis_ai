@@ -4,7 +4,7 @@ llm:
   provider: hermes            # primary brain: Hermes Agent API. "anthropic" = basic fallback mode.
   model: claude-haiku-4-5     # used only by the fallback provider
   api_key_env: ANTHROPIC_API_KEY
-  max_tokens: 220
+  max_tokens: 160
   temperature: 0.3
   history_turns: 12           # fallback provider only
 
@@ -14,25 +14,55 @@ hermes:
   conversation: jarvis-main          # shared voice + HUD thread name
   session_key: jarvis:user:main      # stable long-term memory scope
   timeout: 240
-  ack_after_seconds: 0               # >0 = speak a short ack while the agent works
-  ack_texts: ["On it.", "Still working.", "Almost there."]
+  lean_timeout: 90                   # ChatGPT-like turns (no tools) use this read timeout
+  ack_after_seconds: 0.7             # >0 = speak a short ack while the agent works
+  ack_texts: ["On it.", "Working.", "One moment."]
   fallback_provider: anthropic
   instructions: >
     You are speaking aloud through a voice pipeline. Replies are converted
     to speech, so use plain conversational prose only: no markdown, no lists,
-    no code blocks. Default to one to three short sentences unless asked for
-    more detail. Speak numbers, dates, times and phone numbers as natural
-    spoken words. Never speak secrets, API keys, or passwords aloud.
+    no code blocks — unless the user is in a coding/project-building session
+    (then short spoken status is fine; put code into files via tools).
+    Default to one to three short sentences unless asked for more detail.
+    Speak numbers, dates, times and phone numbers as natural spoken words.
+    Never speak secrets, API keys, or passwords aloud.
+    Everyday voice control: do not rummage the user's disk for no reason.
+    When the user asks you to code, build, fix, scaffold, or create a software
+    project (including large multi-file apps like Jarvis itself), you MAY use
+    Hermes coding tools: terminal, read_file, search_files, patch, execute_code,
+    and related file tools. Prefer a clear project folder (e.g. under D:\ or a
+    path they name), work in steps, and summarize progress aloud briefly.
+    To open something on the PC screen (Chrome, YouTube, WhatsApp), call open_pc_app.
+    To search on YouTube results only, call youtube_type_search.
+    When they say choose/pick/play/open a YouTube video about X, call youtube_pick_video
+    and open one yourself — do not ask which video.
+    For Classroom class by name (english 9s ≈ ENGLISH 9S): classroom_open_class.
+    For a PDF/book inside a class: classroom_find_material. If missing, say so briefly.
+    AUTONOMY: when intent is clear, decide and act. Fuzzy-match names (case/spacing).
+    Only ask to clarify if the request is garbled nonsense or truly impossible.
+    For movies: open_pc_app app=movies or vidbox_type_search — never YouTube for movies.
+    For WhatsApp: whatsapp_status; type to a Skills/Memory contact with phone via
+    whatsapp_draft_to_contact (send=true only if they said send — needs phone ALLOW).
+    Never send without ALLOW. Never invent numbers.
+    Maps / ETA: maps_eta. Voice STT may be imperfect — ask to repeat only if truly garbled.
+    CLEAR find/research asks are never "garbled": e.g. find businesses with 5-10k followers —
+    call web_find and answer in chat. Do NOT open Chrome unless they ask to open on the PC.
+    The user may speak or type Kuwaiti Gulf Arabic (or MSA) as well as English. Always understand
+    Kuwaiti dialect and Arabizi/code-switching. Default replies are English unless they ask for Arabic.
 
 stt:
-  model: small.en           # LOCAL model (fallback if remote configured; primary otherwise)
+  # Multilingual Whisper (NOT *.en) — required for Arabic + English.
+  model: small
+  language: auto
   device: cpu
   compute_type: int8
   sample_rate: 16000
-  partials: true            # live transcript while speaking
-  partial_interval: 1.2     # seconds of new audio between partial passes
+  partials: true
+  partial_interval: 1.2
+  initial_prompt: >-
+    Jarvis voice commands in English or Kuwaiti Arabic Gulf dialect.
+    Mixed Arabic-English is normal.
   # Optional GPU worker (worker/stt_server.py on any NVIDIA machine):
-  # big-model accuracy at ~0.2s. Falls back to the local model automatically.
   # remote:
   #   name: gpu
   #   url: http://192.168.1.50:8768/stt
@@ -62,16 +92,32 @@ server:
 
 security:
   hud_token_env: JARVIS_HUD_TOKEN   # set in ~/.hermes/.env; unset = auth disabled
-  extra_origin_hosts: []            # e.g. ["192.168.1.10"] if you open the HUD by raw IP
+  extra_origin_hosts: []            # e.g. ["192.168.1.10"] LAN IP for stable home access
+  extra_origin_suffixes:            # allow changing/stable tunnel hostnames without edits
+    - "trycloudflare.com"
+    - "ngrok-free.app"
+    - "ngrok.app"
 
 voice:
-  provider: elevenlabs
-  model: eleven_flash_v2_5
-  voice_name: "Your chosen voice"
-  voice_id: YOUR_ELEVENLABS_VOICE_ID
-  output_format: pcm_16000
+  provider: kokoro
+  base_url: http://127.0.0.1:8880/v1
+  model: kokoro
+  voice: bm_george         # British male (Jarvis-style). Others: am_adam, am_michael, bm_lewis, am_echo
+  voice_name: "Jarvis (George)"
+  speed: 1.12
+  source_sample_rate: 24000   # Kokoro native PCM rate
+  output_sample_rate: 16000   # HUD expects this
+  timeout: 120
 
 persona:                     # used only by the anthropic fallback path
   system_prompt: >
     You are the spoken interface for the user's personal agent. Be direct,
     calm, and concise. Default to one to three short sentences.
+    Understand English and Kuwaiti Gulf Arabic; reply in English unless asked for Arabic.
+
+dual_brain:
+  # Layer 1: local Llama + calendar/brain when personal; headless web_find (no Chrome) for facts.
+  # Layer 2: lean ChatGPT-speed replies by default; full tools only for complex / PC actions.
+  chat_layer1_timeout: 8
+  voice_skip_layer1: false
+  voice_layer1_timeout: 6

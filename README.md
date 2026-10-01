@@ -6,9 +6,9 @@ open-source autonomous agent). Talk to a *real* agent — one with persistent
 memory, terminal access, web search, file tools, and 80+ skills — through a
 glowing arc-reactor HUD in any browser on your LAN, or a push-to-talk client.
 
-**Everything runs on your own hardware.** The only cloud calls are your LLM
-provider (via Hermes) and ElevenLabs for the voice. Speech-to-text is fully
-local (Whisper on CPU).
+**Everything runs on your own hardware.** The only cloud call is your LLM
+provider (via Hermes). Speech-to-text and text-to-speech are fully local
+(Whisper + Kokoro on CPU).
 
 ## Demo
 
@@ -39,12 +39,11 @@ The HUD around the ring is a real control center:
   materializes through a scanline, and plays the video. The agent drives it
   through a bundled Hermes plugin (`hud_display`); panels can fly into
   left/right thirds, and "clear the screen" sweeps them away
-- **Usage tracking** — tokens/day, turns, ElevenLabs quota bar
+- **Usage tracking** — tokens/day, turns, Kokoro TTS status
 - **Machines panel** — live CPU/GPU stats for the host and remote workers
 - **Cinematic boot** — press `B`: panels flicker in, ring spins up,
   "Systems online. Good morning."
-- **Privacy filter** — secret-shaped strings are redacted before any text
-  reaches cloud TTS
+- **Privacy filter** — secret-shaped strings are redacted before TTS
 - **Optional GPU ears** — point it at any NVIDIA machine on your LAN running
   the included sidecar and transcription jumps to `large-v3-turbo` at ~0.2 s,
   with automatic fallback to local Whisper when that machine is off
@@ -58,7 +57,7 @@ The HUD around the ring is a real control center:
  ── https/wss :443 ──────────┐   ┌──────────────────────────────────────┐
    mic · speaker · panels    ├──►│ voice pipeline server (this repo)    │
                              │   │  STT: faster-whisper (local, free)   │   ┌─────────────────┐
- Push-to-talk client         │   │  TTS: ElevenLabs Flash (streaming)   ├──►│ Hermes Agent     │
+ Push-to-talk client         │   │  TTS: Kokoro (local Docker, free)    ├──►│ Hermes Agent     │
  ── ws :8765 ────────────────┘   │  HUD + auth + dashboard TLS proxy    │   │  API :8642 (lo)  │
                                  └──────────────────────────────────────┘   │  memory · tools  │
                                                                              │  skills · cron   │
@@ -76,8 +75,7 @@ restart.
 - [Hermes Agent](https://hermes-agent.nousresearch.com/docs/) installed and
   configured with an LLM provider
 - Python 3.11+
-- An [ElevenLabs](https://elevenlabs.io) API key (free tier works; ~0.5
-  credits/char on Flash)
+- [Docker](https://www.docker.com/products/docker-desktop/) for Kokoro TTS
 - Any modern browser on the LAN
 
 ## Install
@@ -90,21 +88,25 @@ cat >> ~/.hermes/.env <<EOF
 API_SERVER_ENABLED=true
 API_SERVER_KEY=$(python3 -c 'import secrets;print(secrets.token_urlsafe(32))')
 JARVIS_HUD_TOKEN=$(python3 -c 'import secrets;print("jarvis-"+secrets.token_hex(3))')
-ELEVENLABS_API_KEY=your-key-here
 EOF
 hermes gateway   # or set up its LaunchAgent / service
 
-# 2. This repo
+# 2. Kokoro TTS (Docker sidecar)
+cd ../worker
+docker compose -f docker-compose.kokoro.yml up -d
+curl http://127.0.0.1:8880/health   # wait until healthy
+
+# 3. This repo
 git clone https://github.com/YOURNAME/jarvis-hermes-hud
 cd jarvis-hermes-hud/server
 python3 -m venv .venv
 .venv/bin/pip install fastapi uvicorn requests pyyaml numpy anthropic \
     RealtimeSTT faster-whisper silero-vad websockets psutil
-cp config/server.example.yaml config/server.yaml   # edit: your ElevenLabs voice_id etc.
+cp config/server.example.yaml config/server.yaml   # edit: voice, machines, etc.
 scripts/make-certs.sh                              # self-signed TLS (browser mic needs it)
 scripts/make-boot-audio.sh YourName                # one-time boot greeting synthesis
 
-# 3. Run
+# 4. Run
 .venv/bin/python server.py
 # open https://YOUR_HOST/hud/ → accept cert → enter your JARVIS_HUD_TOKEN → talk
 ```
@@ -132,7 +134,7 @@ server/          FastAPI voice pipeline + HUD host (the core of this project)
 server/hud/      single-file HUD (vanilla JS, no build step)
 server/scripts/  start/stop/health/smoke + cert & boot-audio generators
 client/          optional Windows/Linux push-to-talk Python client (wake word capable)
-worker/          optional GPU sidecars: big-model STT server + stats agent for the Machines panel
+worker/          optional sidecars: Kokoro TTS (Docker), GPU STT server, stats agent
 hermes-plugin/   Hermes tool plugin: lets the agent summon/dismiss HUD media panels
 launchd/         macOS auto-start templates with hard-won TCC + FD-limit notes
 docs/            SETUP, ARCHITECTURE (protocols/endpoints), TROUBLESHOOTING
@@ -145,7 +147,7 @@ docs/            SETUP, ARCHITECTURE (protocols/endpoints), TROUBLESHOOTING
 - All HUD endpoints + dashboard proxy + browser WebSockets are gated by a
   token (cookie, entered once per device).
 - Hermes' API binds to loopback only; the dashboard binds to loopback only.
-- Secret-shaped strings are redacted before text leaves for cloud TTS.
+- Secret-shaped strings are redacted before text is sent to TTS.
 - LAN-only by design — do not port-forward this to the internet.
 
 ## Credits & license
@@ -155,6 +157,7 @@ Research. HUD aesthetics inspired by
 [jarvis-dashboard](https://github.com/AndrewKochulab/jarvis-dashboard).
 STT by [faster-whisper](https://github.com/SYSTRAN/faster-whisper) /
 [RealtimeSTT](https://github.com/KoljaB/RealtimeSTT). Voice by
-[ElevenLabs](https://elevenlabs.io).
+[Kokoro](https://github.com/hexgrad/kokoro) via
+[Kokoro-FastAPI](https://github.com/remsky/Kokoro-FastAPI).
 
 MIT — see [LICENSE](LICENSE). Use it, fork it, build your own Jarvis.

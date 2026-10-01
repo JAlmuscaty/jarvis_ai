@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JARVIS · Connect</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#050b14">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050b14; --panel:#0a1624; --line:#123048;
+  --cyan:#00e5ff; --cyan-dim:#0a7f96; --teal:#19f0d8;
+  --amber:#ffb300; --red:#ff4d5e; --txt:#9fd8e8; --txt-dim:#4d7d92;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%; background:radial-gradient(ellipse at 50% 0%, #0a1a2c 0%, var(--bg) 55%);
+  color:var(--txt); font-family:'Rajdhani',sans-serif}
+body{padding:10px 12px 28px; max-width:680px; margin:0 auto}
+a.back{display:inline-block; font-family:'Orbitron'; font-size:9px; letter-spacing:2px;
+  color:var(--txt-dim); text-decoration:none; margin-bottom:8px}
+a.back:hover{color:var(--cyan)}
+header{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:10px; gap:8px}
+header h1{font-family:'Orbitron'; font-size:15px; letter-spacing:4px; color:var(--cyan)}
+header .sub{font-size:11px; color:var(--txt-dim); letter-spacing:1px}
+.hint{font-size:13px; color:var(--txt-dim); line-height:1.45; margin-bottom:12px}
+.hint b{color:#cfeefb}
+.tabs{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px}
+.tab{background:#081523; border:1px solid var(--line); color:var(--txt-dim);
+  font-family:'Orbitron'; font-size:9px; letter-spacing:1.5px; padding:7px 10px; cursor:pointer}
+.tab.on{color:var(--cyan); border-color:var(--cyan-dim)}
+.card{border:1px solid var(--line); background:var(--panel); padding:12px; margin-bottom:8px;
+  display:grid; grid-template-columns:1fr auto; gap:10px; align-items:start}
+.card.on{border-color:#1a6e62; box-shadow:0 0 14px #19f0d822}
+.card .t{font-size:15px; color:#cfeefb; font-weight:600}
+.card .b{font-size:12px; color:var(--txt-dim); margin-top:3px; line-height:1.35}
+.card .meta{font-size:11px; color:var(--teal); margin-top:5px; letter-spacing:.5px; line-height:1.4}
+.badge{display:inline-block; font-size:9px; letter-spacing:1px; padding:1px 5px;
+  border:1px solid var(--line); color:var(--amber); margin-right:4px; text-transform:uppercase}
+.badge.on{color:var(--teal); border-color:#1a6e62}
+.badge.mode{color:var(--cyan); border-color:var(--cyan-dim)}
+.actions{display:flex; flex-direction:column; gap:6px; min-width:118px}
+.btn{
+  background:#0a2435; color:var(--cyan); border:1px solid var(--cyan-dim);
+  font-family:'Orbitron'; font-size:9px; letter-spacing:1.5px; padding:8px 10px; cursor:pointer; width:100%;
+}
+.btn.teal{color:var(--teal); border-color:#1a6e62; background:#0a241c}
+.btn.amber{color:var(--amber); border-color:#7a5a1a; background:#241c0a}
+.btn.danger{color:var(--red); border-color:#7a2a33; background:#240a0e}
+.btn:hover{box-shadow:0 0 10px #00e5ff33}
+.btn:disabled{opacity:.45; cursor:default; box-shadow:none}
+.err{color:#ff6b7a; font-size:12px; min-height:1.2em; margin:6px 0; white-space:pre-wrap}
+.toast{position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+  background:#0a2435ee; border:1px solid var(--cyan-dim); color:var(--cyan);
+  font-family:'Orbitron'; font-size:10px; letter-spacing:1px; padding:10px 14px;
+  display:none; z-index:20; max-width:90%}
+.toast.show{display:block}
+.modal{position:fixed; inset:0; background:#02060ce6; display:none; align-items:center; justify-content:center; z-index:40; padding:16px}
+.modal.open{display:flex}
+.modalBox{width:min(420px,100%); background:var(--panel); border:1px solid var(--line); padding:16px}
+.modalBox h2{font-family:'Orbitron'; font-size:12px; letter-spacing:2px; color:var(--cyan); margin-bottom:10px}
+.modalBox p{font-size:13px; color:var(--txt-dim); line-height:1.4; margin-bottom:10px}
+.modalBox input{width:100%; background:#06101c; border:1px solid var(--line); color:#cfeefb;
+  font-family:'Rajdhani'; font-size:14px; padding:8px 10px; margin-bottom:12px}
+.modalActions{display:flex; gap:8px}
+.modalActions .btn{flex:1}
+</style>
+</head>
+<body>
+<a class="back" href="./" id="backHud">← HUD</a>
+<header>
+  <h1>CONNECT</h1>
+  <span class="sub" id="stamp">—</span>
+</header>
+<p class="hint">
+  Link apps the way Claude links Obsidian: Jarvis gets <b>persistent data access</b>
+  (API / vault / local index). After linking, Jarvis can <b>see and search</b> that app
+  <b>without opening</b> it every time. OPEN is optional UI only.
+</p>
+
+<div class="card" id="composioCard" style="margin-bottom:12px">
+  <div>
+    <div class="t"><span class="badge mode">COMPOSIO</span> Multi-app hub</div>
+    <div class="b" id="composioBlurb">Connect Gmail, Notion, GitHub, Slack, and more via Composio. Put your API key only in ~/.hermes/.env — never in chat.</div>
+    <div class="meta" id="composioMeta">Checking…</div>
+  </div>
+  <div class="actions">
+    <button type="button" class="btn" id="composioRefresh">STATUS</button>
+    <button type="button" class="btn teal" id="composioConnectBtn">CONNECT APP</button>
+    <button type="button" class="btn amber" id="composioSetupBtn">SETUP STEPS</button>
+  </div>
+</div>
+
+<div class="tabs" id="tabs"></div>
+<div class="err" id="err"></div>
+<div id="list"></div>
+<div class="toast" id="toast"></div>
+
+<div class="modal" id="pathModal">
+  <div class="modalBox">
+    <h2>LINK OBSIDIAN VAULT</h2>
+    <p>Paste the full path to your Obsidian vault folder. Jarvis reads Markdown directly — Obsidian can stay closed.</p>
+    <input id="vaultPath" placeholder="D:\Notes\MyVault" />
+    <div class="modalActions">
+      <button type="button" class="btn" id="pathCancel">CANCEL</button>
+      <button type="button" class="btn teal" id="pathOk">LINK VAULT</button>
+    </div>
+  </div>
+</div>
+
+<script src="/hud/jarvis-auth.js"></script>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+let apps=[];
+let filter="all";
+let pendingObsidian=false;
+
+async function api(path, opts){
+  opts = opts || {};
+  opts.headers = jarvisAuth.authHeaders(opts.headers || {});
+  const r = await fetch(path, opts);
+  if (r.status === 401) {
+    jarvisAuth.showPinGate("Enter your Jarvis access code to unlock pages.");
+    throw new Error(401);
+  }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok && !j.needs_setup && !j.needs_path) throw new Error(j.error || r.statusText || r.status);
+  return j;
+}
+
+function toast(msg){
+  const t=$("toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove("show"), 3200);
+}
+
+function modeLabel(m){
+  return ({api:"API LINK", vault:"VAULT LINK", synced:"SYNCED INDEX", open:"LAUNCHER"}[m]||m||"").toUpperCase();
+}
+
+function statusLine(a){
+  if(!a.linked) return "Not linked";
+  const bits=["LINKED"];
+  if(a.status==="needs_auth") bits.push("needs Google OAuth setup");
+  if(a.status==="needs_path") bits.push("needs vault path");
+  if(a.status==="needs_sync") bits.push("needs sync");
+  if(a.account) bits.push(a.account);
+  if(a.vault_path) bits.push(a.vault_path);
+  if(a.item_count!=null) bits.push(a.item_count+" items");
+  if(a.last_sync_at) bits.push("synced "+String(a.last_sync_at).replace("T"," ").slice(0,16));
+  return bits.join(" · ");
+}
+
+function renderTabs(){
+  const cats=["all",...new Set(apps.map(a=>a.category||"other"))];
+  $("tabs").innerHTML=cats.map(c=>{
+    const label=c==="all"?"ALL":c.toUpperCase();
+    return `<button type="button" class="tab ${filter===c?"on":""}" data-c="${c}">${label}</button>`;
+  }).join("");
+  [...$("tabs").querySelectorAll(".tab")].forEach(btn=>{
+    btn.onclick=()=>{ filter=btn.dataset.c; renderTabs(); render(); };
+  });
+}
+
+function render(){
+  const box=$("list");
+  const list=apps.filter(a=>filter==="all"||a.category===filter);
+  if(!list.length){ box.innerHTML=`<div class="hint">No connectors in this category.</div>`; return; }
+  box.innerHTML="";
+  list.forEach(a=>{
+    const el=document.createElement("div");
+    el.className="card"+(a.linked?" on":"");
+    const caps=(a.capabilities||[]).join(" · ");
+    el.innerHTML=`<div>
+      <div class="t">
+        <span class="badge ${a.linked?"on":""}">${a.linked?"ON":"OFF"}</span>
+        <span class="badge mode">${esc(modeLabel(a.mode))}</span>
+        ${esc(a.label)}
+      </div>
+      <div class="b">${esc(a.blurb||"")}</div>
+      <div class="meta">${esc(statusLine(a))}${caps?`<br>${esc(caps)}`:""}</div>
+    </div>
+    <div class="actions">
+      ${a.linked
+        ? `${a.mode==="synced"||a.mode==="vault"?`<button type="button" class="btn amber" data-act="sync">SYNC</button>`:""}
+           ${a.mode!=="vault"?`<button type="button" class="btn" data-act="open">OPEN UI</button>`:""}
+           <button type="button" class="btn" data-act="probe">QUERY</button>
+           ${a.id!=="second_brain"?`<button type="button" class="btn danger" data-act="off">UNLINK</button>`:""}`
+        : `<button type="button" class="btn teal" data-act="on">CONNECT</button>
+           ${a.url?`<button type="button" class="btn" data-act="open">OPEN UI</button>`:""}`}
+    </div>`;
+    el.querySelectorAll("button[data-act]").forEach(btn=>{
+      btn.onclick=async()=>{
+        btn.disabled=true;
+        $("err").textContent="";
+        try{
+          const act=btn.dataset.act;
+          if(act==="on"){
+            if(a.id==="obsidian"){
+              pendingObsidian=true;
+              $("pathModal").classList.add("open");
+              $("vaultPath").focus();
+              return;
+            }
+            const j=await api("/api/connections/connect",{
+              method:"POST", headers:{"Content-Type":"application/json"},
+              body:JSON.stringify({app:a.id})
+            });
+            if(j.needs_setup){
+              $("err").textContent=j.error||"Setup required";
+              toast("Google OAuth setup needed");
+            }else{
+              apps=j.apps||apps;
+              toast(j.message||("Linked "+a.label));
+            }
+          }else if(act==="off"){
+            const j=await api("/api/connections/disconnect",{
+              method:"POST", headers:{"Content-Type":"application/json"},
+              body:JSON.stringify({app:a.id})
+            });
+            apps=j.apps||apps; toast("Unlinked "+a.label);
+          }else if(act==="sync"){
+            const j=await api("/api/connections/sync",{
+              method:"POST", headers:{"Content-Type":"application/json"},
+              body:JSON.stringify({app:a.id})
+            });
+            if(!j.ok) throw new Error(j.error||"Sync failed");
+            toast(j.message||("Synced "+a.label));
+            await load();
+            return;
+          }else if(act==="probe"){
+            const q=prompt("Search linked data (Jarvis will NOT open the app):","")||"";
+            const j=await api("/api/connections/query",{
+              method:"POST", headers:{"Content-Type":"application/json"},
+              body:JSON.stringify({app:a.id, query:q})
+            });
+            if(!j.ok) throw new Error(j.error||"Query failed");
+            const n=j.count ?? (j.messages||j.notes||j.ideas||j.files||j.events||j.items||[]).length;
+            toast(`Found ${n} via ${j.source||a.id} (no UI open)`);
+            console.log("connector query", j);
+          }else if(act==="open"){
+            const j=await api("/api/connections/open",{
+              method:"POST", headers:{"Content-Type":"application/json"},
+              body:JSON.stringify({app:a.id})
+            });
+            if(!j.ok) throw new Error(j.error||"Open failed");
+            toast("Opened UI for "+a.label);
+          }
+          renderTabs(); render();
+          $("stamp").textContent=(apps.filter(x=>x.linked).length)+" linked";
+        }catch(e){ $("err").textContent=e.message||String(e); }
+        finally{ btn.disabled=false; }
+      };
+    });
+    box.appendChild(el);
+  });
+}
+
+function esc(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
+
+$("pathCancel").onclick=()=>{ $("pathModal").classList.remove("open"); pendingObsidian=false; };
+$("pathOk").onclick=async()=>{
+  const path=$("vaultPath").value.trim();
+  if(!path){ $("err").textContent="Vault path required"; return; }
+  $("pathModal").classList.remove("open");
+  try{
+    const j=await api("/api/connections/connect",{
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({app:"obsidian", vault_path:path})
+    });
+    if(!j.ok) throw new Error(j.error||"Link failed");
+    apps=j.apps||apps;
+    toast(j.message||"Obsidian vault linked");
+    renderTabs(); render();
+  }catch(e){ $("err").textContent=e.message||String(e); }
+  finally{ pendingObsidian=false; }
+};
+
+async function loadComposio(){
+  try{
+    const j=await api("/api/composio/status");
+    const on=!!j.configured;
+    $("composioCard").classList.toggle("on", on);
+    $("composioMeta").textContent = j.message || (on ? "Configured" : "Not configured");
+    if(j.account_count!=null) $("composioMeta").textContent += ` · ${j.account_count} account(s)`;
+  }catch(e){
+    $("composioMeta").textContent = e.message||String(e);
+  }
+}
+
+$("composioRefresh").onclick=()=>loadComposio();
+$("composioSetupBtn").onclick=async()=>{
+  try{
+    const j=await api("/api/composio/setup");
+    alert(j.steps || j.message || "See docs/COMPOSIO.md");
+  }catch(e){ $("err").textContent=e.message||String(e); }
+};
+$("composioConnectBtn").onclick=async()=>{
+  const toolkit=(prompt("Which app to connect via Composio? (e.g. gmail, notion, github, slack)","gmail")||"").trim();
+  if(!toolkit) return;
+  $("err").textContent="";
+  try{
+    const j=await api("/api/composio/connect",{
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({toolkit})
+    });
+    if(j.redirect_url){
+      window.open(j.redirect_url, "_blank");
+      toast("Opened Composio connect link");
+    }
+    alert(j.message || j.error || JSON.stringify(j));
+    await loadComposio();
+  }catch(e){ $("err").textContent=e.message||String(e); }
+};
+
+async function load(){
+  const j=await api("/api/connections");
+  apps=j.apps||[];
+  $("stamp").textContent=(j.linked_count||j.connected_count||0)+" linked";
+  renderTabs(); render();
+  await loadComposio();
+}
+
+const backC = document.getElementById("backHud"); if (backC) backC.href = jarvisAuth.withToken("./");
+jarvisAuth.requireAuth().then(ok => {
+  if (!ok) return;
+  load().catch(e=>{ $("err").textContent=e.message||String(e); });
+});
+setInterval(()=>load().catch(()=>{}), 20000);
+</script>
+</body>
+</html>

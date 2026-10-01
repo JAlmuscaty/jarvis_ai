@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JARVIS · Autonomous Mind & Study</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#050b14">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #050b14;
+  --panel: #0a1624;
+  --line: #123048;
+  --cyan: #00e5ff;
+  --cyan-dim: #0a7f96;
+  --teal: #19f0d8;
+  --amber: #ffd54f;
+  --purple: #b388ff;
+  --txt: #9fd8e8;
+  --txt-dim: #4d7d92;
+  --ok: #00e676;
+  --danger: #ff5252;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--txt);
+  font-family: 'Rajdhani', sans-serif;
+  min-height: 100vh;
+  padding: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 18px;
+}
+header a {
+  font-family: 'Orbitron';
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--txt-dim);
+  text-decoration: none;
+  border: 1px solid var(--line);
+  padding: 6px 12px;
+}
+header a:hover { color: var(--cyan); border-color: var(--cyan-dim); }
+header h1 {
+  font-family: 'Orbitron';
+  font-size: 14px;
+  letter-spacing: 3px;
+  color: var(--cyan);
+  text-align: center;
+}
+header .tag {
+  font-family: 'Share Tech Mono';
+  font-size: 11px;
+  color: var(--teal);
+  letter-spacing: 1px;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+@media (max-width: 768px) { .grid2 { grid-template-columns: 1fr; } }
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.card.glow {
+  border-color: var(--cyan-dim);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.08);
+}
+.card h2 {
+  font-family: 'Orbitron';
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--cyan);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.badge {
+  font-family: 'Share Tech Mono';
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 2px;
+  letter-spacing: 1px;
+}
+.badge.green { background: #00e67622; color: var(--ok); border: 1px solid #00e67655; }
+.badge.amber { background: #ffd54f22; color: var(--amber); border: 1px solid #ffd54f55; }
+.badge.cyan { background: #00e5ff22; color: var(--cyan); border: 1px solid #00e5ff55; }
+.badge.purple { background: #b388ff22; color: var(--purple); border: 1px solid #b388ff55; }
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 6px 0;
+  font-size: 13px;
+}
+.stat-row span { color: var(--txt-dim); }
+.stat-row b { font-family: 'Share Tech Mono'; color: #fff; }
+
+.progress-wrap {
+  margin: 12px 0 6px;
+}
+.progress-bar-bg {
+  width: 100%;
+  height: 8px;
+  background: #081523;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--teal), var(--cyan));
+  box-shadow: 0 0 8px var(--cyan);
+  transition: width 0.4s ease;
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+button.btn {
+  background: #081c2e;
+  border: 1px solid var(--cyan-dim);
+  color: var(--cyan);
+  font-family: 'Orbitron';
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+button.btn:hover {
+  background: var(--cyan);
+  color: #050b14;
+  box-shadow: 0 0 12px var(--cyan);
+}
+button.btn.amber {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+button.btn.amber:hover {
+  background: var(--amber);
+  color: #050b14;
+}
+
+.subject-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.sub-card {
+  background: #081523;
+  border: 1px solid var(--line);
+  padding: 12px;
+  border-radius: 2px;
+  transition: border-color 0.2s;
+}
+.sub-card:hover { border-color: var(--cyan-dim); }
+.sub-card .sub-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.sub-card .sub-title {
+  font-family: 'Orbitron';
+  font-size: 11px;
+  color: #fff;
+  letter-spacing: 1px;
+}
+.sub-card .sub-desc {
+  font-size: 12px;
+  color: var(--txt-dim);
+  line-height: 1.3;
+  margin-bottom: 8px;
+}
+.sub-card .sub-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-family: 'Share Tech Mono';
+  color: var(--teal);
+}
+
+.tester-box {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 16px;
+  margin-bottom: 18px;
+}
+.tester-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.tester-row input {
+  flex: 1;
+  background: #06101c;
+  border: 1px solid var(--line);
+  color: #fff;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  padding: 9px 12px;
+  outline: none;
+}
+.tester-row input:focus { border-color: var(--cyan); }
+.test-res {
+  margin-top: 12px;
+  padding: 12px;
+  background: #06101c;
+  border: 1px solid var(--line);
+  font-size: 13px;
+  line-height: 1.4;
+  display: none;
+}
+.test-res.show { display: block; }
+.test-res b { color: var(--cyan); font-family: 'Share Tech Mono'; }
+
+.feed-box {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 16px;
+}
+.feed-box h3 {
+  font-family: 'Orbitron';
+  font-size: 11px;
+  color: var(--cyan);
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+.feed-list {
+  max-height: 240px;
+  overflow-y: auto;
+  font-family: 'Share Tech Mono';
+  font-size: 11px;
+}
+.feed-item {
+  padding: 6px 0;
+  border-bottom: 1px solid #0c2033;
+  display: flex;
+  justify-content: space-between;
+}
+.feed-item span.q { color: var(--txt); }
+.feed-item span.s { color: var(--teal); }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="/hud/">← HUD HOME</a>
+  <h1>AUTONOMOUS MIND &amp; STUDY</h1>
+  <div class="tag" id="topStatus">DUAL BRAIN ONLINE</div>
+</header>
+
+<!-- DUAL BRAIN ARCHITECTURE MONITOR -->
+<div class="grid2">
+  <div class="card glow">
+    <h2>
+      <span>LAYER 1 · LOCAL AUTONOMOUS MIND</span>
+      <span class="badge green" id="l1Badge">ACTIVE</span>
+    </h2>
+    <div class="stat-row"><span>Engine:</span><b>Llama 3.2 3B (GPU)</b></div>
+    <div class="stat-row"><span>Status:</span><b style="color:var(--ok)">Local &amp; Offline Capable</b></div>
+    <div class="stat-row"><span>Scope:</span><b>Daily questions, subjects &amp; facts</b></div>
+    <div class="stat-row"><span>Local Queries Answered:</span><b id="l1Count">0</b></div>
+    <div class="stat-row"><span>Avg Local Latency:</span><b id="l1Latency">—</b></div>
+  </div>
+
+  <div class="card">
+    <h2>
+      <span>LAYER 2 · THE BRAIN (CHATGPT / HERMES)</span>
+      <span class="badge purple">ORCHESTRATOR</span>
+    </h2>
+    <div class="stat-row"><span>Engine:</span><b>Hermes Agent + ChatGPT OAuth</b></div>
+    <div class="stat-row"><span>Role:</span><b>Escalations, tools &amp; deep actions</b></div>
+    <div class="stat-row"><span>Scope:</span><b>PC apps, calls, emails &amp; web</b></div>
+    <div class="stat-row"><span>Escalations Handled:</span><b id="l2Count">0</b></div>
+    <div class="stat-row"><span>Local Resolution Rate:</span><b id="l1Rate">—</b></div>
+  </div>
+</div>
+
+<!-- STUDY SESSION PROGRESS & PACING -->
+<div class="card glow" style="margin-bottom:18px;">
+  <h2>
+    <span>STUDY SESSION MONITOR · CURRICULUM SUBJECTS</span>
+    <span class="badge cyan" id="studyStateBadge">STANDBY</span>
+  </h2>
+  <div class="stat-row"><span>Target Session Duration:</span><b id="targetDur">Unlimited deep study</b></div>
+  <div class="stat-row"><span>Study time:</span><b id="timeElapsed">0m · continuous</b></div>
+  <div class="stat-row"><span>Active Subject &amp; Topic:</span><b id="activeTopic">—</b></div>
+  <div class="stat-row"><span>Total Knowledge Cards Mastered:</span><b id="totalCards">—</b></div>
+  <div class="stat-row"><span>Complex / open-world cards:</span><b id="complexCards">—</b></div>
+  <p style="font-size:12px;color:var(--txt-dim);margin:8px 0 0;line-height:1.4" id="ambitionNote">
+    Studying all subjects + advanced domains while idle. Local study boosts Layer 1; Hermes stays the deep brain.
+  </p>
+
+  <div class="progress-wrap">
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progFill"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="btnStart" onclick="startStudy()">START STUDYING</button>
+    <button class="btn amber" id="btnPause" onclick="pauseStudy()">PAUSE</button>
+    <button class="btn" onclick="fetchStatus()">REFRESH STATUS</button>
+  </div>
+</div>
+
+<!-- 8 MAIN SUBJECTS MATRIX -->
+<h3 style="font-family:'Orbitron'; font-size:11px; letter-spacing:2px; color:var(--cyan); margin-bottom:10px;">
+  CURRICULUM MATRIX · 20+ DOMAINS
+</h3>
+<div class="subject-grid" id="subjectGrid">
+  <!-- injected by JS -->
+</div>
+
+<!-- INTERACTIVE MIND TESTER -->
+<div class="tester-box">
+  <h3 style="font-family:'Orbitron'; font-size:11px; letter-spacing:2px; color:var(--cyan);">
+    TEST MIND &amp; ROUTING (LAYER 1 VS LAYER 2)
+  </h3>
+  <div class="stat-row" style="margin-top:4px;">
+    <span>Ask any daily question, math problem, science fact, or PC action to see which layer answers:</span>
+  </div>
+  <div class="tester-row">
+    <input id="testInput" placeholder="e.g. 'What is 15 percent of 80?' or 'Why is the sky blue?' or 'Open movies'">
+    <button class="btn" onclick="runTest()">ASK JARVIS</button>
+  </div>
+  <div class="test-res" id="testResult"></div>
+</div>
+
+<!-- LIVE STUDY ACTIVITY STREAM -->
+<div class="feed-box">
+  <h3>RECENT STUDY &amp; ASSIMILATION ACTIVITY</h3>
+  <div class="feed-list" id="feedList">
+    <div class="feed-item"><span class="q">Initializing curriculum and study engine…</span></div>
+  </div>
+</div>
+
+<script src="/hud/jarvis-auth.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+
+async function api(path, opts = {}) {
+  opts = opts || {};
+  opts.headers = jarvisAuth.authHeaders({
+    "Content-Type": "application/json",
+    ...(opts.headers || {})
+  });
+  const res = await fetch(path, opts);
+  if (res.status === 401) {
+    jarvisAuth.showPinGate("Enter your Jarvis access code to unlock pages.");
+    throw new Error(401);
+  }
+  return await res.json();
+}
+
+async function fetchStatus() {
+  try {
+    const s = await api("/api/study/status");
+    const b = await api("/api/dual_brain/stats");
+
+    // Dual brain stats
+    $("l1Count").textContent = b.layer1_answered || 0;
+    $("l2Count").textContent = b.layer2_escalated || 0;
+    $("l1Latency").textContent = (b.avg_layer1_latency_ms || 0) + " ms";
+    $("l1Rate").textContent = (b.layer1_resolution_rate || 0) + "%";
+
+    // Study session stats
+    $("timeElapsed").textContent = `${s.elapsed_formatted || "0m"} studied · continuous (no limit)`;
+    $("activeTopic").textContent = `${s.active_subject || "General"} ▸ ${s.active_topic || "Foundations"}`;
+    $("totalCards").textContent = `${s.total_cards || 0} cards`;
+    if ($("complexCards")) {
+      $("complexCards").textContent = `${s.complex_cards || 0} complex · ${s.open_world_cards || 0} open-world`;
+    }
+    if ($("ambitionNote") && s.note) $("ambitionNote").textContent = s.note;
+    const pct = s.progress_pct;
+    if (pct == null) {
+      $("progFill").style.width = s.status === "studying" ? "100%" : (s.status === "idle_waiting" ? "40%" : "10%");
+      $("progFill").style.opacity = s.status === "idle_waiting" ? "0.45" : "1";
+    } else {
+      $("progFill").style.width = `${pct || 0}%`;
+      $("progFill").style.opacity = "1";
+    }
+    const badge = (s.status || "standby").toUpperCase().replace("IDLE_WAITING", "IDLE WAIT");
+    $("studyStateBadge").textContent = badge;
+    $("studyStateBadge").className = "badge " + (s.status === "studying" ? "green" : (s.status === "idle_waiting" ? "cyan" : "amber"));
+    // Top interests strip if present
+    let tip = $("interestTip");
+    if (!tip) {
+      tip = document.createElement("div");
+      tip.id = "interestTip";
+      tip.style.cssText = "font-size:11px;color:var(--txt-dim);margin:6px 0 10px;letter-spacing:0.5px";
+      const host = $("timeElapsed")?.parentElement || document.body;
+      host.appendChild(tip);
+    }
+    const tops = s.top_interests || [];
+    tip.textContent = tops.length
+      ? ("Focusing study on: " + tops.map(t => t.title).join(" · "))
+      : "Learning what you ask most — ask anything to steer study.";
+
+    renderSubjects(s.subjects || {}, s.mastery || {});
+    renderFeed(s.recent_activity || []);
+  } catch (e) {
+    console.error("Status fetch failed", e);
+  }
+}
+
+function renderSubjects(subjects, mastery) {
+  const grid = $("subjectGrid");
+  grid.innerHTML = "";
+  for (const [id, sub] of Object.entries(subjects)) {
+    const m = mastery[id] || { cards: 0, mastered_pct: 0 };
+    const div = document.createElement("div");
+    div.className = "sub-card";
+    div.innerHTML = `
+      <div class="sub-header">
+        <span class="sub-title">${sub.icon || "📚"} ${sub.title}</span>
+        <span class="badge ${m.cards > 0 ? "cyan" : "amber"}">${m.mastered_pct}%</span>
+      </div>
+      <div class="sub-desc">${sub.description}</div>
+      <div class="sub-meta">
+        <span>Cards Mastered: ${m.cards}</span>
+        <span>Topics: ${(sub.topics || []).length}</span>
+      </div>
+    `;
+    grid.appendChild(div);
+  }
+}
+
+function renderFeed(items) {
+  const list = $("feedList");
+  if (!items || !items.length) return;
+  list.innerHTML = items.slice().reverse().map(it => `
+    <div class="feed-item">
+      <span class="q">▸ ${escapeHtml(it.question || it.action)}</span>
+      <span class="s">[${escapeHtml(it.subject || "study")}]</span>
+    </div>
+  `).join("");
+}
+
+function escapeHtml(str) {
+  return String(str || "").replace(/[<>&]/g, c => ({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]));
+}
+
+async function startStudy() {
+  await api("/api/study/start", { method: "POST" });
+  fetchStatus();
+}
+
+async function pauseStudy() {
+  await api("/api/study/pause", { method: "POST" });
+  fetchStatus();
+}
+
+async function runTest() {
+  const input = $("testInput").value.trim();
+  if (!input) return;
+  const resBox = $("testResult");
+  resBox.className = "test-res show";
+  resBox.innerHTML = "Thinking locally…";
+
+  try {
+    const r = await api("/api/dual_brain/ask", {
+      method: "POST",
+      body: JSON.stringify({ text: input })
+    });
+    if (r.layer === 1) {
+      resBox.innerHTML = `
+        <div><b>[LAYER 1 · LOCAL AUTONOMOUS MIND]</b> (${r.latency_ms} ms · ${r.model})</div>
+        <div style="margin-top:6px; color:#fff;">${escapeHtml(r.text)}</div>
+        <div style="margin-top:4px; font-size:11px; color:var(--teal);">Knowledge cards consulted: ${r.cards_used}</div>
+      `;
+    } else {
+      resBox.innerHTML = `
+        <div><b style="color:var(--purple);">[LAYER 2 · THE BRAIN (CHATGPT / HERMES)]</b></div>
+        <div style="margin-top:6px; color:#fff;">Escalated to Layer 2: ${escapeHtml(r.reason || "Action / Tool execution required")}.</div>
+      `;
+    }
+  } catch (e) {
+    resBox.innerHTML = "Test error: " + e;
+  }
+}
+
+// Initial fetch and auto-poll
+jarvisAuth.requireAuth().then(ok => { if (ok) fetchStatus(); });
+setInterval(fetchStatus, 5000);
+</script>
+
+</body>
+</html>

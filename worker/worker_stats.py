@@ -11,6 +11,7 @@ Setup on the worker (once):
 Requires nvidia-smi on PATH for GPU stats (ships with NVIDIA drivers).
 """
 import json
+import os
 import subprocess
 from http.server import BaseHTTPRequestHandler, HTTPServer
 

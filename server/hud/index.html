@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="JARVIS">
 <meta name="theme-color" content="#050b14">
+<link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -35,6 +36,56 @@ header{
 header h1{font-family:'Orbitron'; font-size:19px; letter-spacing:8px; color:var(--cyan); text-shadow:0 0 12px #00e5ff88}
 header .sub{font-size:12px; letter-spacing:3px; color:var(--txt-dim)}
 #clock{font-family:'Orbitron'; font-size:15px; letter-spacing:2px; color:var(--teal)}
+#headerRight{display:flex; align-items:center; gap:14px; margin-left:auto; position:relative; z-index:50}
+#modelPicker{position:relative; z-index:50}
+#modelBtn{
+  display:flex; align-items:center; gap:8px; max-width:220px;
+  background:#06101c; border:1px solid var(--cyan-dim); color:var(--cyan);
+  font-family:'Orbitron'; font-size:9px; letter-spacing:1.2px;
+  padding:7px 10px; cursor:pointer; white-space:nowrap;
+  -webkit-tap-highlight-color:transparent;
+}
+#modelBtn:hover,#modelBtn[aria-expanded="true"]{box-shadow:0 0 10px #00e5ff33}
+#modelBtn .lbl{color:var(--txt-dim); letter-spacing:1.5px}
+#modelBtn .val{overflow:hidden; text-overflow:ellipsis; color:var(--cyan); max-width:140px}
+#modelBtn .chev{color:var(--txt-dim); font-size:10px}
+/* Fixed overlay — header clip-path would hide an absolute dropdown */
+#modelMenu{
+  display:none; position:fixed; z-index:10050;
+  min-width:min(280px, calc(100vw - 24px)); max-width:calc(100vw - 16px);
+  max-height:min(70vh, 440px); overflow-y:auto; -webkit-overflow-scrolling:touch;
+  background:#0a1624f5; border:1px solid var(--cyan-dim);
+  box-shadow:0 12px 40px #000d; backdrop-filter:blur(8px);
+  overscroll-behavior:contain;
+}
+#modelMenu.open{display:block}
+#modelMenu .mh{
+  position:sticky; top:0; background:#0a1624;
+  font-family:'Orbitron'; font-size:8px; letter-spacing:2px; color:var(--txt-dim);
+  padding:10px 12px 6px; border-bottom:1px solid var(--line); z-index:1;
+}
+#modelMenu button{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  width:100%; text-align:left; background:transparent;
+  border:none; border-bottom:1px solid #0e2c4033; color:var(--txt);
+  font-family:'Rajdhani'; font-size:15px; padding:12px 14px; cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+#modelMenu button:hover,#modelMenu button:active{background:#00e5ff14; color:var(--cyan)}
+#modelMenu button.on{color:var(--cyan); background:#00e5ff18}
+#modelMenu button .tier{flex:0 0 auto; font-size:10px; color:var(--txt-dim); letter-spacing:1px; text-transform:uppercase}
+#modelScrim{
+  display:none; position:fixed; inset:0; z-index:10040; background:#02060c66;
+}
+#modelScrim.open{display:block}
+#modelToast{
+  position:fixed; top:64px; right:16px; z-index:10060; display:none;
+  background:#0a1624f2; border:1px solid var(--cyan-dim); color:var(--cyan);
+  font-family:'Orbitron'; font-size:9px; letter-spacing:1.5px; padding:8px 12px;
+  box-shadow:0 4px 20px #000a;
+}
+#modelToast.show{display:block; animation:fadeToast 2.4s ease forwards}
+@keyframes fadeToast{0%{opacity:0; transform:translateY(-6px)}12%{opacity:1; transform:none}75%{opacity:1}100%{opacity:0}}
 .col{display:flex; flex-direction:column; gap:8px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--line) transparent}
 .panel{
   border:1px solid var(--line); background:var(--panel); padding:10px 12px; position:relative;
@@ -69,12 +120,38 @@ header .sub{font-size:12px; letter-spacing:3px; color:var(--txt-dim)}
 .msg.you{align-self:flex-end; border-color:#205a6e; color:#cfeefb}
 .msg.jarvis{align-self:flex-start; border-left:2px solid var(--cyan)}
 .msg.sys{align-self:center; color:var(--txt-dim); font-size:12px; border:none; background:none; padding:2px}
-#chatRow{display:flex; gap:8px; width:100%; max-width:680px; padding:8px 10px}
+#chatRow{display:flex; gap:8px; width:100%; max-width:680px; padding:8px 10px; align-items:center}
 #chatInput{
   flex:1; background:#06101c; border:1px solid var(--line); color:#cfeefb; padding:9px 12px;
   font-family:'Rajdhani'; font-size:15px; outline:none;
 }
 #chatInput:focus{border-color:var(--cyan-dim); box-shadow:0 0 8px #00e5ff33}
+#chatVocBtn{
+  flex:0 0 auto; min-width:44px; padding:9px 12px; letter-spacing:1px;
+  touch-action:none; user-select:none; -webkit-user-select:none;
+}
+#chatCamBtn{
+  flex:0 0 auto; min-width:44px; padding:9px 12px; letter-spacing:1px;
+}
+#chatVocBtn.rec{
+  color:#fff; border-color:var(--red); background:#3a0e15;
+  box-shadow:0 0 14px #ff4d5e66; animation:vocPulse 1s ease-in-out infinite;
+}
+.msg.photo img{
+  max-width:min(280px,72vw); max-height:220px; border-radius:4px;
+  border:1px solid var(--line); margin-top:4px; display:block;
+}
+@keyframes vocPulse{0%,100%{box-shadow:0 0 10px #ff4d5e44}50%{box-shadow:0 0 18px #ff4d5e88}}
+.msg.voice{display:flex; flex-direction:column; gap:4px; min-width:140px}
+.msg.voice .vocWave{
+  display:flex; align-items:center; gap:8px; font-family:'Orbitron'; font-size:10px;
+  letter-spacing:2px; color:var(--cyan-dim);
+}
+.msg.voice .vocWave::before{
+  content:""; width:8px; height:8px; border-radius:50%; background:var(--cyan);
+  box-shadow:0 0 8px var(--cyan);
+}
+.msg.voice .vocText{opacity:.92}
 button.btn{
   background:#0a2435; color:var(--cyan); border:1px solid var(--cyan-dim); padding:9px 16px;
   font-family:'Orbitron'; font-size:11px; letter-spacing:2px; cursor:pointer;
@@ -83,7 +160,23 @@ button.btn:hover{background:#0e3349; box-shadow:0 0 10px #00e5ff44}
 button.btn.danger{color:var(--red); border-color:#7a2a33; background:#240a0e}
 button.btn.danger:hover{background:#3a0e15; box-shadow:0 0 10px #ff4d5e55}
 button.btn.amber{color:var(--amber); border-color:#7a5a1a; background:#241c0a}
+button.btn.amber:hover{background:#3a2e0e; box-shadow:0 0 10px #ffb30044}
+button.btn.amber.on{color:#fff; border-color:var(--amber); background:#4a3808; box-shadow:0 0 14px #ffb30055}
+#voiceRow{display:flex; gap:6px; flex-wrap:wrap}
+#voiceRow .btn{flex:1; min-width:0}
+#voiceRow #alwaysBtn{flex:0 0 auto; min-width:92px; letter-spacing:1px}
+#voiceRow #heyBtn{flex:0 0 auto; min-width:92px; letter-spacing:1px; color:var(--teal); border-color:#1a6e62; background:#0a241c}
+#voiceRow #heyBtn:hover{box-shadow:0 0 10px #19f0d844}
+#voiceRow #heyBtn.on{color:#fff; border-color:var(--teal); background:#0e3d34; box-shadow:0 0 14px #19f0d855}
+#heyBanner{display:none; font-size:11px; color:var(--teal); letter-spacing:1px; margin-top:6px; line-height:1.35}
+#heyBanner.show{display:block}
 #stopBtn{display:none}
+#stopFab{
+  display:none; position:fixed; z-index:50; left:50%; bottom:max(18px, env(safe-area-inset-bottom));
+  transform:translateX(-50%); min-width:160px; padding:14px 28px; font-size:13px; letter-spacing:3px;
+  border-radius:0; box-shadow:0 0 24px #ff4d5e66; touch-action:manipulation;
+}
+#stopFab.show{display:block}
 #approvals{position:absolute; top:8px; left:50%; transform:translateX(-50%); z-index:20; width:min(560px,92%); display:flex; flex-direction:column; gap:8px}
 .appr{border:1px solid var(--amber); background:#1a1305f2; padding:12px 14px;
   box-shadow:0 0 24px #ffb30044; animation:apprIn .25s ease-out}
@@ -208,7 +301,12 @@ body.booted header{animation:panelIn .4s backwards}
   header{position:sticky; top:0; z-index:15; flex-shrink:0}
   header h1{font-size:15px; letter-spacing:4px}
   header .sub{display:none}
-  #clock{font-size:12px}
+  #clock{font-size:11px}
+  #modelBtn{max-width:158px; padding:8px 10px; font-size:8px}
+  #modelBtn .lbl{display:none}
+  #modelBtn .val{max-width:110px}
+  #headerRight{gap:8px}
+  #modelMenu{left:8px !important; right:8px !important; width:auto; min-width:0; max-width:none}
   #center{order:1; min-height:0}
   #reactorWrap{width:min(62vw,260px); height:min(62vw,260px)}
   #coreState .st{font-size:12px; letter-spacing:4px}
@@ -248,12 +346,23 @@ footer{
   <div id="bootSub">HERMES NEURAL INTERFACE</div>
   <div id="bootLines"></div>
 </div>
+<button class="btn danger" id="stopFab" type="button">■ STOP</button>
 <div id="grid">
   <header>
     <h1>J.A.R.V.I.S</h1>
     <div class="sub">HERMES AGENT INTERFACE &nbsp;//&nbsp; <span id="connState">LINK DOWN</span></div>
-    <div id="clock">--:--:--</div>
+    <div id="headerRight">
+      <div id="modelPicker">
+        <button type="button" id="modelBtn" title="Change ChatGPT brain model" aria-haspopup="menu" aria-expanded="false">
+          <span class="lbl">MODEL</span>
+          <span class="val" id="modelVal">—</span>
+          <span class="chev">▾</span>
+        </button>
+      </div>
+      <div id="clock">--:--:--</div>
+    </div>
   </header>
+  <div id="modelToast"></div>
 
   <!-- LEFT COLUMN -->
   <div class="col">
@@ -262,10 +371,13 @@ footer{
       <div class="kv"><span><span class="dot" id="micDot"></span>Microphone</span><b id="micState">idle</b></div>
       <div class="kv"><span>Input level</span><b>&nbsp;</b></div>
       <div class="bar"><i id="levelBar"></i></div>
-      <div style="margin-top:8px; display:flex; gap:6px">
-        <button class="btn" id="talkBtn" style="flex:1">ENGAGE VOICE</button>
+      <div id="voiceRow" style="margin-top:8px">
+        <button class="btn" id="talkBtn">ENGAGE VOICE</button>
+        <button class="btn amber" id="alwaysBtn" title="Listen &amp; Do — Jarvis acts as you speak, no spoken replies">LISTEN &amp; DO</button>
+        <button class="btn" id="heyBtn" title="Say Hey Jarvis to talk; say Stop to quit">HEY JARVIS</button>
         <button class="btn danger" id="stopBtn">■ STOP</button>
       </div>
+      <div id="heyBanner">iPhone: web apps <b>cannot</b> listen in other apps (Apple limit). Use <b>Hey Siri → Jarvis</b> shortcut (see docs) or stay on this screen. PC: use wake client for true Hey Jarvis without browser.</div>
     </div>
     <div class="panel"><h2><span>AGENT ACTIVITY</span><span class="num">02</span></h2>
       <div id="activity"><div>— no activity yet —</div></div>
@@ -276,7 +388,13 @@ footer{
       <div class="kv"><span>Last: total</span><b id="mTotal">—</b></div>
       <div class="kv"><span>Brain</span><b id="mBrain">—</b></div>
     </div>
-    <div class="panel"><h2><span>VIEWS</span><span class="num">04</span></h2>
+    <div class="panel"><h2><span>VIEWS</span><span class="num">05</span></h2>
+      <button class="btn viewBtn" style="color:var(--cyan); border-color:var(--cyan); font-weight:700;" onclick="sendTextChat('Jarvis, give me my daily briefing')">▸ DAILY BRIEFING</button>
+      <button class="btn viewBtn" onclick="location.href=jarvisAuth.withToken('/hud/study.html')">▸ AUTONOMOUS MIND &amp; STUDY</button>
+      <button class="btn viewBtn" onclick="location.href=jarvisAuth.withToken('/hud/connect.html')">▸ CONNECT DATA (APIs / VAULTS)</button>
+      <button class="btn viewBtn" onclick="location.href=jarvisAuth.withToken('/hud/calendar.html')">▸ CALENDAR / SCHEDULE</button>
+      <button class="btn viewBtn" onclick="location.href=jarvisAuth.withToken('/hud/brain.html')">▸ SECOND BRAIN</button>
+      <button class="btn viewBtn" onclick="location.href=jarvisAuth.withToken('/hud/skills.html')">▸ SKILLS / MEMORY</button>
       <button class="btn viewBtn" onclick="openView('KANBAN','/kanban')">▸ KANBAN BOARD</button>
       <button class="btn viewBtn" onclick="openView('HERMES DASHBOARD','/')">▸ HERMES DASHBOARD</button>
       <button class="btn viewBtn" onclick="openView('CHAT','/chat')">▸ DASHBOARD CHAT</button>
@@ -298,7 +416,10 @@ footer{
     </div>
     <div id="feed"></div>
     <div id="chatRow">
-      <input id="chatInput" placeholder="Type to Hermes… (/new resets · voice: click the ring)" autocomplete="off">
+      <button class="btn" id="chatVocBtn" title="Hold to record a voice note (or tap to toggle)">MIC</button>
+      <button class="btn amber" id="chatCamBtn" title="Attach a photo — type a description first if you want">CAM</button>
+      <input id="chatCamInput" type="file" accept="image/*" capture="environment" style="display:none">
+      <input id="chatInput" placeholder="Type a message… · CAM for photo · /simple · /new" autocomplete="off">
       <button class="btn" id="sendBtn">SEND</button>
       <button class="btn" id="clearBtn" title="Clear the visible chat (history stays in Hermes)">CLR</button>
     </div>
@@ -309,13 +430,13 @@ footer{
     <div class="panel"><h2><span>MODELS LOADOUT</span><span class="num">06</span></h2>
       <div class="kv"><span>Brain</span><b>hermes-agent</b></div>
       <div class="kv"><span>STT</span><b>whisper base.en</b></div>
-      <div class="kv"><span>TTS</span><b>ElevenLabs Flash v2.5</b></div>
+      <div class="kv"><span>TTS</span><b>Kokoro (local)</b></div>
       <div class="kv"><span>Fallback</span><b>claude-haiku-4-5</b></div>
       <div style="border-top:1px solid var(--line); margin:6px 0 4px"></div>
       <div class="kv"><span>Tokens today</span><b id="uTok">—</b></div>
       <div class="kv" id="uCostRow" style="display:none"><span>Est. cost today</span><b id="uCost">—</b></div>
       <div class="kv"><span>Turns today</span><b id="uTurns">—</b></div>
-      <div class="kv"><span>11Labs quota</span><b id="uTts">—</b></div>
+      <div class="kv"><span>TTS status</span><b id="uTts">—</b></div>
       <div class="bar"><i id="ttsBar"></i></div>
     </div>
     <div class="panel"><h2><span>MACHINES</span><span class="num">07</span></h2>
@@ -323,7 +444,9 @@ footer{
     </div>
     <div class="panel"><h2><span>SKILLS</span><span class="num">08</span></h2>
       <div class="kv"><span>Loaded skills</span><b id="skillCount">—</b></div>
+      <div class="kv"><span>Remembered facts</span><b id="memCount">—</b></div>
       <div id="skillsList"></div>
+      <button class="btn viewBtn" style="margin-top:8px;width:100%" onclick="location.href=jarvisAuth.withToken('/hud/skills.html')">▸ SKILLS / MEMORY</button>
     </div>
     <div class="panel"><h2><span>DIAGNOSTICS</span><span class="num">09</span></h2>
       <div class="kv"><span><span class="dot" id="apiDot"></span>Hermes API</span><b id="apiState">—</b></div>
@@ -357,15 +480,54 @@ footer{
     <span>NOUS HERMES AGENT v0.16</span>
   </footer>
 </div>
+<div id="modelScrim" aria-hidden="true"></div>
+<div id="modelMenu" role="menu" aria-label="ChatGPT models">
+  <div class="mh">CHATGPT / CODEX MODELS</div>
+</div>
 
+<script src="/hud/jarvis-auth.js"></script>
 <script>
 "use strict";
 /* ============================== state ============================== */
 const CONV = "jarvis-main";
-let ws=null, wsReady=false, capturing=false, state="standby";
-let audioCtx=null, workletNode=null, mediaStream=null, srcNode=null;
+let ws=null, wsReady=false, capturing=false, alwaysOn=false, state="standby";
+let listenDo=false, listenDoSession=null, listenDoPartialTimer=null, listenDoLastPartial="";
+// Voice-note flags live up here so mic worklet / VAD can see them safely
+let chatVocRecording=false, chatVocStarting=false, chatVocSending=false;
+let audioCtx=null, workletNode=null, mediaStream=null, srcNode=null, micSink=null;
+let prerollChunks=[], capPeak=0, captureStartedAt=0, micSuspect=false;
+const PREROLL_CHUNKS=6; // 6 × 80ms
 let playhead=0, activeSources=[], leftoverByte=null, audioArrived=false;
+let rearmTimer=null;
 let level=0, turns=0;
+
+/* ---- always-on / Siri-style VAD ---- */
+let vadArmed=false, vadHadSpeech=false, vadSpeechMs=0, vadSilenceMs=0, vadRecordMs=0;
+const VAD_CHUNK_MS=80;
+const VAD_SPEECH_THRESH=0.022;
+const VAD_START_MS=280;
+const VAD_END_MS=800;
+const VAD_END_LISTEN_DO_MS=520;
+const VAD_MIN_SPEECH_MS=400;
+const VAD_MAX_RECORD_MS=45000;
+const VAD_IS_PHONE=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+const VAD_BARGE_THRESH=VAD_SPEECH_THRESH*(VAD_IS_PHONE?3:2);
+const VAD_BARGE_MS=VAD_IS_PHONE?720:480;
+
+/* ---- Hey Jarvis wake word (iPhone / Safari) ---- */
+const IS_IOS=/iPad|iPhone|iPod/.test(navigator.userAgent)
+  ||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+let heyJarvisMode=false, heyConvoActive=false, wakeRec=null, wakeRecBusy=false;
+let keepAliveNode=null, screenWakeLock=null;
+let micGranted=false, heySettingsWarned=false, heyBgPaused=false, heySrFails=0;
+let micWatchdogTimer=null;
+const MIC_HANDOFF_MS=IS_IOS?650:400;
+const IS_PWA=window.navigator.standalone===true
+  ||window.matchMedia("(display-mode: standalone)").matches;
+const WAKE_PHRASES=[/\bhey\s+jarvis\b/i,/\bok\s+jarvis\b/i,/\bhi\s+jarvis\b/i];
+const STOP_PHRASES=[/^\s*stop\s*\.?\s*$/i,/^\s*jarvis\s+stop\s*\.?\s*$/i,/\bstop\s+listening\b/i];
+// Apps we cannot detect on iOS; mic is released when another app takes it (WhatsApp call, etc.)
+const MIC_BLOCK_HINT="Mic busy — another app may be using it (WhatsApp, Instagram live, etc.). Jarvis will retry.";
 
 const $=id=>document.getElementById(id);
 const feed=$("feed");
@@ -448,18 +610,62 @@ function addActivity(text,toolName,preview){
 }
 
 /* live partial transcript bubble */
-let liveEl=null, currentRun=null;
+let liveEl=null, currentRun=null, ignoreAudio=false, stopPending=false;
+let turnReplyEl=null, replyShown=false;
 function showLive(text){
   if(!text)return;
   if(!liveEl){liveEl=addMsg("you live","");}
   liveEl.textContent=text; feed.scrollTop=feed.scrollHeight;
 }
 function clearLive(){ if(liveEl){liveEl.remove(); liveEl=null;} }
-function showStop(on){ $("stopBtn").style.display=on?"block":"none"; }
+function showJarvisReply(text, partial){
+  const t=(text||"").trim();
+  if(!t) return;
+  if(turnReplyEl){
+    turnReplyEl.textContent=t;
+    feed.scrollTop=feed.scrollHeight;
+  }else{
+    turnReplyEl=addMsg("jarvis", t);
+  }
+  replyShown=true;
+  if(!partial) turnReplyEl=null;
+}
+function showStop(on){
+  const vis=!!on;
+  $("stopBtn").style.display=vis?"block":"none";
+  $("stopFab").classList.toggle("show", vis);
+}
 function stopRun(){
+  // Always mute playback immediately — even if server is slow
+  ignoreAudio=true;
   stopPlayback();
-  if(wsReady)ws.send(JSON.stringify({type:"stop_run"}));
+  stopPending=true;
+  setState("standby","STOPPING","halting…");
+  $("micState").textContent="STOPPING";
+  if(wsReady){
+    try{ ws.send(JSON.stringify({type:"stop_run"})); }catch{}
+    // Retry once — first click sometimes races mid-turn
+    setTimeout(()=>{
+      if(stopPending && wsReady){
+        try{ ws.send(JSON.stringify({type:"stop_run"})); }catch{}
+      }
+    },400);
+  }
+  // Keep STOP visible until server confirms stopped/done (so another tap works)
+  showStop(true);
+  addMsg("sys","Stopping…");
+}
+function markStoppedUI(msg){
+  stopPending=false;
+  ignoreAudio=true;
+  stopPlayback();
   showStop(false);
+  currentRun=null;
+  setState("standby","STANDBY");
+  $("micState").textContent="ready";
+  if(msg) addMsg("sys",msg);
+  // Allow audio again after a short beat (next turn)
+  setTimeout(()=>{ if(!stopPending) ignoreAudio=false; },600);
 }
 
 /* approval cards */
@@ -478,38 +684,285 @@ function showApproval(e){
   addActivity("approval requested");
 }
 
+function showPcApproval(e){
+  const esc=s=>String(s||"").replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]));
+  const id=e.approval_id||"";
+  if(!id) return;
+  // dedupe same card
+  if(document.querySelector(`[data-pc-appr="${id.replace(/"/g,"")}"]`)) return;
+  const title=e.title||"APPROVAL REQUIRED";
+  const desc=(e.description?e.description+"\n\n":"")+(e.preview||"");
+  const card=document.createElement("div"); card.className="appr"; card.dataset.pcAppr=id;
+  card.innerHTML=`<h3>⚠ ${esc(title)}</h3><pre>${esc(desc).slice(0,1200)}</pre>
+    <div class="row"><button class="btn">ALLOW</button><button class="btn danger">DENY</button></div>`;
+  const [allowB,denyB]=card.querySelectorAll("button");
+  const send=async dec=>{
+    allowB.disabled=true; denyB.disabled=true;
+    try{
+      if(wsReady) ws.send(JSON.stringify({type:"pc_approval_decision",approval_id:id,decision:dec}));
+      else await fetch("/api/pc_approval/"+encodeURIComponent(id),{
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({decision:dec})
+      });
+    }catch{}
+    card.remove();
+    addMsg("sys", dec==="allow"?"Allowed PC action.":"Denied PC action.");
+  };
+  allowB.onclick=()=>send("allow"); denyB.onclick=()=>send("deny");
+  $("approvals").appendChild(card);
+  addActivity("pc approval: "+(e.kind||"action"));
+  showHudNotify({title:title, body:(e.preview||"").slice(0,160), level:"approval"});
+}
+
+function ensureNotifyPermission(){
+  try{
+    if(!("Notification" in window)) return;
+    if(Notification.permission==="default"){
+      Notification.requestPermission().catch(()=>{});
+    }
+  }catch{}
+}
+
+function showHudNotify(e){
+  const title=String((e&&e.title)||"Jarvis").slice(0,80);
+  const body=String((e&&e.body)||(e&&e.message)||"").slice(0,240);
+  const level=String((e&&e.level)||"info");
+  // In-HUD toast
+  let host=$("hudToasts");
+  if(!host){
+    host=document.createElement("div");
+    host.id="hudToasts";
+    host.style.cssText="position:fixed;top:12px;left:12px;right:12px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none";
+    document.body.appendChild(host);
+  }
+  const toast=document.createElement("div");
+  toast.style.cssText="pointer-events:auto;background:rgba(12,18,28,.92);color:#e8eef8;border:1px solid rgba(120,160,220,.35);padding:10px 12px;border-radius:10px;font:600 13px/1.35 system-ui,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.35)";
+  if(level==="approval") toast.style.borderColor="rgba(255,180,80,.7)";
+  if(level==="success") toast.style.borderColor="rgba(80,220,140,.55)";
+  if(level==="reminder") toast.style.borderColor="rgba(100,180,255,.75)";
+  toast.innerHTML=`<div>${title.replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]))}</div>`+
+    (body?`<div style="font-weight:500;opacity:.9;margin-top:4px">${body.replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]))}</div>`:"");
+  host.prepend(toast);
+  setTimeout(()=>{ try{toast.remove();}catch{} }, level==="reminder" ? 12000 : 6000);
+
+  // OS notification while HUD tab/PWA is open (works best when installed / permission granted)
+  try{
+    if("Notification" in window && Notification.permission==="granted"){
+      const n=new Notification(title,{body:body||undefined,tag:"jarvis-"+level,renotify:true});
+      setTimeout(()=>{ try{n.close();}catch{} }, 8000);
+    }
+  }catch{}
+  try{ addActivity("notify: "+title); }catch{}
+}
+
+const IS_PHONE_CLIENT=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+  || (matchMedia("(pointer: coarse)").matches && matchMedia("(max-width: 900px)").matches);
+const _phoneOpenSeen=new Set();
+try{ ensureNotifyPermission(); }catch{}
+function isPhoneClient(){ return IS_PHONE_CLIENT; }
+
+async function ackPhoneOpen(commandId){
+  if(!commandId) return;
+  try{ await fetch("/api/phone/ack/"+encodeURIComponent(commandId),{method:"POST"}); }catch{}
+}
+
+function launchPhoneTarget(scheme, url){
+  // Prefer https same-tab nav (avoids iOS "Open in App?" for YouTube/etc).
+  // tel: / sms: / mailto: must use the native scheme to start a call/message.
+  const native = (scheme && /^(tel|sms|mailto):/i.test(scheme)) ? scheme
+    : (url && /^(tel|sms|mailto):/i.test(url)) ? url
+    : null;
+  if(native){
+    try{
+      const a=document.createElement("a");
+      a.href=native; a.style.display="none";
+      document.body.appendChild(a); a.click(); a.remove();
+    }catch{
+      try{ location.href=native; }catch{}
+    }
+    return;
+  }
+  if(url){
+    try{ location.assign(url); }
+    catch{ location.href=url; }
+    return;
+  }
+  if(scheme){
+    try{
+      const a=document.createElement("a");
+      a.href=scheme; a.style.display="none";
+      document.body.appendChild(a); a.click(); a.remove();
+    }catch{
+      try{ location.href=scheme; }catch{}
+    }
+  }
+}
+
+function handlePhoneOpen(e){
+  const id=e.command_id||"";
+  if(id && _phoneOpenSeen.has(id)) return;
+  if(id) _phoneOpenSeen.add(id);
+  const label=e.label||e.app||"app";
+  const isCall=/^tel:/i.test(e.scheme||"")||/^tel:/i.test(e.url||"")||e.app==="phone";
+  if(!isPhoneClient()){
+    addMsg("sys", (isCall?"Call queued: ":"Phone open queued: ")+label+" (keep Jarvis open on your phone).");
+    return;
+  }
+  addMsg("sys", (isCall?"Calling ":"Opening ")+label+(isCall?"…":" on this phone…"));
+  launchPhoneTarget(e.scheme||null, e.url||null);
+  ackPhoneOpen(id);
+}
+
+async function pullPendingPhoneOpens(){
+  if(!isPhoneClient()) return;
+  try{
+    const r=await fetch("/api/phone/pending");
+    if(!r.ok) return;
+    const j=await r.json();
+    (j.pending||[]).forEach(cmd=>handlePhoneOpen(cmd));
+  }catch{}
+}
+
 /* ============================== websocket ========================== */
 function wsUrl(){return (location.protocol==="https:"?"wss://":"ws://")+location.host+"/ws"}
+let connectTimer=null, lastPong=0;
+function linkDown(){
+  wsReady=false; alwaysOn=false; listenDo=false; capturing=false; vadArmed=false;
+  heyJarvisMode=false; heyConvoActive=false;
+  stopWakeRecognition(); stopKeepalive();
+  $("wsDot").className="dot off"; $("wsState").textContent="offline"; $("connState").textContent="LINK DOWN";
+  $("alwaysBtn").textContent="LISTEN & DO"; $("alwaysBtn").classList.remove("on");
+  $("heyBtn").textContent="HEY JARVIS"; $("heyBtn").classList.remove("on");
+  $("talkBtn").disabled=false; $("talkBtn").textContent="ENGAGE VOICE";
+  setState("standby","STANDBY");
+}
+function reconnectNow(){
+  const old=ws;
+  if(old){ old.onclose=null; old.onmessage=null; try{ old.close(); }catch{} }
+  linkDown();
+  connect();
+}
+/** iOS keeps a suspended page's socket looking OPEN while it is dead — verify with a ping. */
+function checkLinkAlive(){
+  if(!ws||ws.readyState===WebSocket.CLOSED||ws.readyState===WebSocket.CLOSING){ reconnectNow(); return; }
+  if(ws.readyState!==WebSocket.OPEN) return;
+  const sentAt=Date.now();
+  try{ ws.send(JSON.stringify({type:"ping"})); }catch{ reconnectNow(); return; }
+  setTimeout(()=>{ if(lastPong<sentAt) reconnectNow(); },2500);
+}
 function connect(){
+  clearTimeout(connectTimer); connectTimer=null;
   ws=new WebSocket(wsUrl()); ws.binaryType="arraybuffer";
-  ws.onopen=()=>{wsReady=true;$("wsDot").className="dot on";$("wsState").textContent="online";$("connState").textContent="LINK ACTIVE";$("footMsg").textContent="VOICE SERVER CONNECTED"};
-  ws.onclose=()=>{wsReady=false;$("wsDot").className="dot off";$("wsState").textContent="offline";$("connState").textContent="LINK DOWN";setState("standby","STANDBY");setTimeout(connect,3000)};
+  ws.onopen=()=>{
+    wsReady=true;
+    try{ ws.send(JSON.stringify({type:"hello",device:IS_PHONE_CLIENT?"phone":"pc"})); }catch{}
+    $("wsDot").className="dot on";$("wsState").textContent="online";$("connState").textContent="LINK ACTIVE";$("footMsg").textContent="VOICE SERVER CONNECTED";
+    maybeAutoWakeFromUrl();
+    pullPendingPhoneOpens();
+  };
+  ws.onclose=()=>{
+    linkDown();
+    clearTimeout(connectTimer); connectTimer=setTimeout(connect,3000);
+  };
   ws.onerror=()=>{};
   ws.onmessage=ev=>{
-    if(ev.data instanceof ArrayBuffer){playChunk(ev.data);return}
+    if(ev.data instanceof ArrayBuffer){
+      if(listenDo) return; // no talk-back in Listen & Do
+      playChunk(ev.data);return
+    }
     let e; try{e=JSON.parse(ev.data)}catch{return}
+    if(e.type==="pong"){ lastPong=Date.now(); return; }
+    if(e.type==="missed_reply"){
+      if(e.transcript) addMsg("you",e.transcript);
+      addMsg("jarvis",e.text||"");
+      addMsg("sys","(finished while your phone was away)");
+      return;
+    }
     if(e.type==="summon_panel"){ summonPanel(e); }
     else if(e.type==="dismiss_panels"){ dismissAllPanels(); }
-    else if(e.type==="partial_transcript"){ showLive(e.text); }
-    else if(e.type==="transcript"){ clearLive(); if(e.text)addMsg("you",e.text); }
-    else if(e.type==="run_started"){ currentRun=e.run_id; showStop(true); }
-    else if(e.type==="approval_request"){ showApproval(e); }
-    else if(e.type==="agent_status"){
-      if(e.state==="thinking"){setState("thinking","PROCESSING");showStop(true)}
-      else if(e.state==="tool_use"){setState("tool","WORKING");addActivity("",e.tool||"tool",e.preview)}
-      else if(e.state==="speaking")setState("speaking","SPEAKING");
-      else if(e.state==="stopped"){setState("standby","STANDBY");showStop(false);stopPlayback();addMsg("sys","run stopped")}
+    else if(e.type==="partial_transcript"){
+      showLive(e.text);
+      if(listenDo) queueListenDoPartial(e.text);
     }
-    else if(e.type==="error"){ clearLive(); addMsg("sys","error: "+e.message); setState("standby","STANDBY"); showStop(false); }
+    else if(e.type==="transcript"){
+      clearLive();
+      const raw=(e.text||"").trim();
+      const low=raw.toLowerCase();
+      if(heyConvoActive&&STOP_PHRASES.some(r=>r.test(low)||low==="stop")){
+        addMsg("you",raw);
+        endHeySession(true);
+        addMsg("sys","Stopped listening.");
+        return;
+      }
+      if(e.text){ addMsg("you",e.text); showStop(true); turnReplyEl=null; replyShown=false; }
+    }
+    else if(e.type==="translated"){
+      if(e.from&&e.to&&e.from!==e.to) addMsg("sys","AR → "+e.to);
+    }
+    else if(e.type==="run_started"){ currentRun=e.run_id; ignoreAudio=false; showStop(true); }
+    else if(e.type==="approval_request"){ showApproval(e); }
+    else if(e.type==="pc_approval_request"){ showPcApproval(e); }
+    else if(e.type==="hud_notify"){ showHudNotify(e); }
+    else if(e.type==="pc_approval_resolved"){
+      const id=e.approval_id||"";
+      const el=id&&document.querySelector(`[data-pc-appr="${id.replace(/"/g,"")}"]`);
+      if(el) el.remove();
+    }
+    else if(e.type==="phone_open"){ handlePhoneOpen(e); }
+    else if(e.type==="pc_task"){ runPcTask(e); }
+    else if(e.type==="pc_task_result"){ addMsg("jarvis",e.text||""); }
+    else if(e.type==="memory_saved"){
+      const facts=e.facts||[];
+      if(facts.length){
+        const labels=facts.map(f=>f.title||f.value).filter(Boolean).join(", ");
+        addMsg("sys","Saved to Skills / Memory: "+labels);
+        if(typeof refreshSkills==="function") refreshSkills().catch(()=>{});
+      }
+    }
+    else if(e.type==="reply"){
+      if(listenDo){
+        if(e.text) try{ addActivity("do",(e.text||"").slice(0,80)); }catch{}
+        return;
+      }
+      showJarvisReply(e.text, !!e.partial);
+    }
+    else if(e.type==="agent_status"){
+      if(e.state==="thinking"){setState("thinking", listenDo?"DOING":"PROCESSING"); ignoreAudio=!!listenDo; showStop(true)}
+      else if(e.state==="tool_use"){setState("tool","WORKING"); showStop(true); addActivity("",e.tool||"tool",e.preview)}
+      else if(e.state==="speaking"){
+        if(listenDo){ setState("listening","LISTENING","doing — silent"); return; }
+        setState("speaking","SPEAKING"); showStop(true);
+      }
+      else if(e.state==="stopped"){
+        markStoppedUI(stopPending?"Stopped.":"run stopped");
+        scheduleAlwaysRearm();
+      }
+    }
+    else if(e.type==="error"){ clearLive();
+      if(alwaysOn||heyConvoActive||listenDo){
+        if(e.message&&!e.message.includes("No transcript")) addMsg("sys","error: "+e.message);
+        scheduleAlwaysRearm();
+        showStop(false); stopPending=false;
+      }
+      else { addMsg("sys","error: "+e.message); markStoppedUI(null); showStop(false); }
+    }
     else if(e.type==="done"){
-      currentRun=null; showStop(false);
+      currentRun=null; showStop(false); stopPending=false; ignoreAudio=false;
       const tm=e.timing||{};
       turns++; $("mTurns").textContent=turns;
       if(tm.end_of_speech_to_first_audio_seconds!=null)$("mFirst").textContent=tm.end_of_speech_to_first_audio_seconds+"s";
       if(tm.total_turn_seconds!=null)$("mTotal").textContent=tm.total_turn_seconds+"s";
       $("mBrain").textContent=tm.llm_provider||"—";
-      if(tm.response_text)addMsg("jarvis",tm.response_text);
-      setTimeout(()=>{if(state!=="listening")setState("standby","STANDBY")},400);
+      if(e.stop_listen && listenDo){
+        addMsg("sys","Call started — Listen & Do stopped.");
+        if(alwaysOn) toggleAlwaysOn();
+        return;
+      }
+      if(tm.response_text && !replyShown && !listenDo) showJarvisReply(tm.response_text, false);
+      else if(listenDo && tm.response_text) try{ addActivity("do",(tm.response_text||"").slice(0,100)); }catch{}
+      turnReplyEl=null; replyShown=false;
+      if(heyConvoActive||alwaysOn||listenDo) scheduleAlwaysRearm();
+      else setTimeout(()=>{if(state!=="listening")setState("standby","STANDBY")},400);
     }
   };
 }
@@ -518,12 +971,90 @@ connect();
 /* ============================== audio out ========================== */
 function ensureCtx(){
   if(!audioCtx){
-    try{ audioCtx=new (window.AudioContext||window.webkitAudioContext)({sampleRate:16000}); }
-    catch{ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }
+    const AC=window.AudioContext||window.webkitAudioContext;
+    // iOS Safari feeds silence/garbage from the mic into a context forced to 16 kHz —
+    // phones run at the native rate and the worklet downsamples.
+    if(IS_IOS||IS_PHONE_CLIENT) audioCtx=new AC();
+    else{
+      try{ audioCtx=new AC({sampleRate:16000}); }
+      catch{ audioCtx=new AC(); }
+    }
   }
-  if(audioCtx.state==="suspended")audioCtx.resume();
+  if(audioCtx.state!=="running"&&audioCtx.state!=="closed") audioCtx.resume().catch(()=>{});
+}
+async function ensureAudioRunning(){
+  ensureCtx();
+  if(audioCtx && audioCtx.state!=="running"){
+    try{ await audioCtx.resume(); }catch{}
+  }
+  return audioCtx?.state==="running";
+}
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+function micStreamLive(){
+  const t=mediaStream?.getAudioTracks?.()[0];
+  return !!(t && t.readyState==="live" && !t.muted);
+}
+function releaseMic(){
+  clearTimeout(micWatchdogTimer); micWatchdogTimer=null;
+  if(srcNode){ try{ srcNode.disconnect(); }catch{} srcNode=null; }
+  if(micSink){ try{ micSink.disconnect(); }catch{} micSink=null; }
+  prerollChunks=[];
+  if(workletNode){
+    try{ workletNode.port.onmessage=null; workletNode.disconnect(); }catch{}
+    workletNode=null;
+  }
+  if(mediaStream){
+    mediaStream.getTracks().forEach(tr=>{ try{ tr.stop(); }catch{} });
+    mediaStream=null;
+  }
+}
+function bindMicTrack(track){
+  if(!track) return;
+  track.onended=()=>{
+    if(heyJarvisMode||heyConvoActive||alwaysOn){
+      addMsg("sys",MIC_BLOCK_HINT);
+      if(document.hidden) pauseHeyBackground();
+      else pauseHeyForMicBusy();
+    }
+  };
+  track.onmute=()=>{
+    if(heyJarvisMode||heyConvoActive) pauseHeyForMicBusy();
+  };
+}
+function wireMicWorklet(){
+  workletNode.port.onmessage=e=>{
+    const a=new Int16Array(e.data); let s=0;
+    for(let i=0;i<a.length;i+=8)s+=Math.abs(a[i]);
+    level=Math.min(1,(s/(a.length/8))/9000);
+    // Copy — worklet transfers the buffer; sending the same ref can drop later chunks
+    const copy=e.data.slice?e.data.slice(0):new Uint8Array(e.data).buffer.slice(0);
+    if(capturing&&wsReady){
+      capPeak=Math.max(capPeak,level);
+      try{ ws.send(copy); }catch{}
+    }else{
+      // VAD needs ~280ms of speech before it starts a turn; keep it so first words aren't cut
+      prerollChunks.push(copy);
+      if(prerollChunks.length>PREROLL_CHUNKS) prerollChunks.shift();
+    }
+    if(chatVocRecording){
+      // Copy — worklet may reuse/transfer the buffer
+      chatVocChunks.push(e.data.slice ? e.data.slice(0) : new Uint8Array(e.data).buffer.slice(0));
+      $("levelBar").style.width=(level*100).toFixed(0)+"%";
+    }
+    // Never run always-on / Hey Jarvis VAD while capturing a chat voice note
+    if(chatVocRecording||chatVocStarting) return;
+    if(capturing||alwaysOn||heyConvoActive){
+      $("levelBar").style.width=(level*100).toFixed(0)+"%";
+      tickVAD(level);
+    }
+  };
+  srcNode.connect(workletNode);
+  // WebKit only pulls audio through nodes that reach the destination; route via a muted gain
+  micSink=audioCtx.createGain(); micSink.gain.value=0;
+  workletNode.connect(micSink); micSink.connect(audioCtx.destination);
 }
 function playChunk(buf){
+  if(ignoreAudio||stopPending) return;
   ensureCtx();
   let bytes=new Uint8Array(buf);
   if(leftoverByte!==null){const m=new Uint8Array(bytes.length+1);m[0]=leftoverByte;m.set(bytes,1);bytes=m;leftoverByte=null}
@@ -540,6 +1071,25 @@ function playChunk(buf){
   audioArrived=true;
 }
 function stopPlayback(){ activeSources.forEach(s=>{try{s.stop()}catch{}}); activeSources=[]; playhead=0; }
+
+/** Wait until TTS playback drains before re-arming VAD (avoids speaker→mic echo false turns). */
+function scheduleAlwaysRearm(){
+  if(!alwaysOn&&!heyConvoActive&&!listenDo) return;
+  clearTimeout(rearmTimer);
+  const tryArm=()=>{
+    if(!alwaysOn&&!heyConvoActive&&!listenDo) return;
+    if(!wsReady){ rearmTimer=setTimeout(tryArm,200); return; }
+    const ctx=audioCtx;
+    const stillPlaying=!listenDo && ctx && playhead > (ctx.currentTime+0.08);
+    const sourcesAlive=!listenDo && activeSources.length>0;
+    if(stillPlaying||sourcesAlive){
+      rearmTimer=setTimeout(tryArm,120);
+      return;
+    }
+    armAlwaysListen(true);
+  };
+  rearmTimer=setTimeout(tryArm, listenDo?80:180);
+}
 
 /* ============================== audio in =========================== */
 const workletCode=`
@@ -568,50 +1118,594 @@ class PCM16K extends AudioWorkletProcessor{
 }
 registerProcessor("pcm16k",PCM16K);`;
 let workletReady=false;
-async function initMic(){
-  ensureCtx();
+async function initMic(opts={}){
+  const force=!!opts.force;
+  await ensureAudioRunning();
   if(!workletReady){
     const url=URL.createObjectURL(new Blob([workletCode],{type:"application/javascript"}));
     await audioCtx.audioWorklet.addModule(url); workletReady=true;
   }
-  if(!mediaStream){
-    mediaStream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,sampleRate:16000,echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
-    srcNode=audioCtx.createMediaStreamSource(mediaStream);
-    workletNode=new AudioWorkletNode(audioCtx,"pcm16k");
-    workletNode.port.onmessage=e=>{
-      if(capturing&&wsReady)ws.send(e.data);
-      // level meter
-      const a=new Int16Array(e.data); let s=0;
-      for(let i=0;i<a.length;i+=8)s+=Math.abs(a[i]);
-      level=Math.min(1,(s/(a.length/8))/9000);
-      if(capturing)$("levelBar").style.width=(level*100).toFixed(0)+"%";
-    };
-    srcNode.connect(workletNode);
-  }
+  // Reuse live mic only if worklet graph is still intact
+  if(!force && micStreamLive() && workletNode && srcNode) return;
+  releaseMic();
+  const micOpts={channelCount:1,echoCancellation:true,noiseSuppression:true,autoGainControl:true};
+  if(!(IS_IOS||IS_PHONE_CLIENT)) micOpts.sampleRate=16000;
+  mediaStream=await navigator.mediaDevices.getUserMedia({audio:micOpts});
+  bindMicTrack(mediaStream.getAudioTracks()[0]);
+  srcNode=audioCtx.createMediaStreamSource(mediaStream);
+  workletNode=new AudioWorkletNode(audioCtx,"pcm16k");
+  wireMicWorklet();
   $("micDot").className="dot on"; $("micState").textContent="ready";
+  micGranted=true;
 }
 
 /* ============================== talk flow ========================== */
-async function toggleTalk(){
-  if(!wsReady){addMsg("sys","voice server offline");return}
-  if(capturing){ // stop talking
-    capturing=false;
-    ws.send(JSON.stringify({type:"stop"}));
-    $("talkBtn").textContent="ENGAGE VOICE"; $("micState").textContent="ready"; $("levelBar").style.width="0%";
+function resetVAD(){
+  vadSpeechMs=0; vadSilenceMs=0; vadRecordMs=0; vadHadSpeech=false;
+}
+
+function armAlwaysListen(quiet){
+  if((!alwaysOn&&!heyConvoActive&&!listenDo)||!wsReady) return;
+  vadArmed=true; resetVAD();
+  capturing=false;
+  const hint=heyConvoActive?(quiet?"speak now — say Stop to end":"Hey Jarvis active — speak now")
+    :listenDo?(quiet?"listening — I'll do it, no talk-back":"Listen & Do — speak, I act as you go")
+    :(quiet?"speak anytime":"speak — I'm listening");
+  setState("listening","LISTENING",hint);
+  $("micState").textContent=heyConvoActive?"HEY JARVIS":(listenDo?"LISTEN & DO":"ALWAYS ON");
+  $("levelBar").style.width="0%";
+}
+
+function beginVoiceTurn(fromAlways){
+  if(!wsReady||capturing) return;
+  clearTimeout(rearmTimer); rearmTimer=null;
+  stopPlayback();
+  audioArrived=false;
+  vadArmed=false; resetVAD();
+  const handsFree=!!(fromAlways||heyConvoActive||listenDo);
+  const payload={type:"start",sample_rate:16000,format:"pcm_s16le",channels:1,conversation:CONV};
+  if(handsFree) payload.auto=true;
+  if(listenDo){
+    payload.listen_do=true;
+    if(listenDoSession) payload.listen_do_session=listenDoSession;
+    ignoreAudio=true;
+  }
+  ws.send(JSON.stringify(payload));
+  if(handsFree) prerollChunks.forEach(c=>{ try{ ws.send(c); }catch{} });
+  prerollChunks=[];
+  capPeak=0; captureStartedAt=performance.now();
+  capturing=true;
+  if(fromAlways||heyConvoActive||listenDo){
+    setState("listening", listenDo?"DOING":"LISTENING", listenDo?"acting as you speak…":"hearing you…");
+    $("micState").textContent=listenDo?"DOING":"HEARING";
+  } else {
+    $("talkBtn").textContent="■ STOP & SEND";
+    $("micState").textContent="LIVE";
+    setState("listening","LISTENING","CLICK AGAIN TO SEND");
+  }
+}
+
+function endVoiceTurn(fromAlways){
+  if(!capturing) return;
+  capturing=false;
+  ws.send(JSON.stringify({type:"stop"}));
+  const heldMs=performance.now()-captureStartedAt;
+  if(!fromAlways && !heyConvoActive && !listenDo && heldMs>900 && capPeak<0.004){
+    micSuspect=true;
+    addMsg("sys","Your mic sent only silence — I'll reset the microphone on your next tap. If it keeps happening: "+heyMicSettingsHint());
+  }
+  $("levelBar").style.width="0%";
+  ignoreAudio=!!listenDo; stopPending=false;
+  showStop(true);
+  if(fromAlways||heyConvoActive||listenDo){
+    setState(listenDo?"tool":"thinking", listenDo?"DOING":"PROCESSING", listenDo?"finishing…":"one moment…");
+    $("micState").textContent=listenDo?"DOING":"PROCESSING";
+  } else {
+    $("talkBtn").textContent="ENGAGE VOICE";
+    $("micState").textContent="PROCESSING";
     setState("thinking","PROCESSING");
+  }
+}
+
+function tickVAD(lvl){
+  if(chatVocRecording||chatVocStarting) return;
+  if(!alwaysOn&&!heyConvoActive&&!listenDo) return;
+  const speech=lvl>=VAD_SPEECH_THRESH;
+  const endMs=listenDo?VAD_END_LISTEN_DO_MS:VAD_END_MS;
+
+  if(state==="speaking"||state==="thinking"||state==="tool"){
+    const overlap=listenDo && (state==="tool"||state==="thinking");
+    if(overlap){
+      // Listen & Do: overlapping speech just starts the next chunk
+    } else if(state!=="speaking"){
+      // Still working on the request — background noise / talking must not cancel it (use ■ STOP)
+      vadSpeechMs=0;
+      if(speech) $("stateHint").textContent="still working — tap ■ STOP to interrupt";
+    } else if(lvl>=VAD_BARGE_THRESH){
+      // Barge-in over Jarvis's voice needs louder + longer speech: phone speakers echo into the mic
+      vadSpeechMs+=VAD_CHUNK_MS;
+      if(vadSpeechMs>=VAD_BARGE_MS){
+        if(currentRun) stopRun();
+        else stopPlayback();
+        beginVoiceTurn(true);
+      }
+    } else {
+      vadSpeechMs=Math.max(0,vadSpeechMs-VAD_CHUNK_MS);
+    }
+    if(!overlap) return;
+  }
+
+  if(capturing){
+    vadRecordMs+=VAD_CHUNK_MS;
+    if(speech){
+      vadHadSpeech=true;
+      vadSilenceMs=0;
+      vadSpeechMs+=VAD_CHUNK_MS;
+    } else if(vadHadSpeech) {
+      vadSilenceMs+=VAD_CHUNK_MS;
+      if(vadSilenceMs>=endMs && vadSpeechMs>=VAD_MIN_SPEECH_MS){
+        endVoiceTurn(true);
+        return;
+      }
+    }
+    if(vadRecordMs>=VAD_MAX_RECORD_MS) endVoiceTurn(true);
+    return;
+  }
+
+  if(!vadArmed) return;
+  if(speech){
+    vadSpeechMs+=VAD_CHUNK_MS;
+    if(vadSpeechMs>=VAD_START_MS) beginVoiceTurn(true);
+  } else {
+    vadSpeechMs=Math.max(0,vadSpeechMs-VAD_CHUNK_MS);
+  }
+}
+
+/* ============================== Hey Jarvis wake word ================= */
+async function ensureMicPermission(){
+  if(micGranted && micStreamLive()) return true;
+  try{
+    const probe=await navigator.mediaDevices.getUserMedia({
+      audio:{channelCount:1,echoCancellation:true,noiseSuppression:true,autoGainControl:true}
+    });
+    probe.getTracks().forEach(t=>t.stop());
+    micGranted=true;
+    return true;
+  }catch(err){
+    micGranted=false;
+    throw err;
+  }
+}
+
+function heyMicSettingsHint(){
+  if(IS_PWA) return "Settings → JARVIS → Microphone → Allow (also Privacy → Microphone → JARVIS).";
+  if(IS_IOS) return "Settings → Safari → Microphone → Allow, or Settings → Privacy → Microphone → Safari.";
+  return "Allow microphone for this site in browser settings.";
+}
+
+function warnHeyMicOnce(reason){
+  if(heySettingsWarned) return;
+  heySettingsWarned=true;
+  addMsg("sys",reason+" "+heyMicSettingsHint());
+}
+
+function pauseHeyBackground(){
+  if(!heyJarvisMode&&!heyConvoActive) return;
+  heyBgPaused=true;
+  stopWakeRecognition();
+  setState("standby","PAUSED","return to Jarvis to listen");
+  $("micState").textContent="PAUSED";
+}
+
+async function resumeHeyAfterForeground(){
+  if(!heyJarvisMode&&!heyConvoActive) return;
+  heyBgPaused=false;
+  ensureCtx();
+  if(audioCtx.state==="suspended") await audioCtx.resume().catch(()=>{});
+  startKeepalive();
+  if(heyConvoActive){
+    try{ await initMic({force:true}); await ensureAudioRunning(); armAlwaysListen(true); }catch(e){ pauseHeyForMicBusy(); }
+    return;
+  }
+  if(heyJarvisMode){
+    try{
+      await ensureMicPermission();
+      releaseMic();
+      startWakeRecognition();
+    }catch(e){
+      warnHeyMicOnce("Microphone not allowed.");
+      endHeySession(true);
+    }
+  }
+}
+function updateHeyUI(){
+  const on=heyJarvisMode||heyConvoActive;
+  $("heyBtn").textContent=on?"■ STOP":"HEY JARVIS";
+  $("heyBtn").classList.toggle("on",on);
+  $("heyBanner").classList.toggle("show",IS_IOS||IS_PWA);
+  $("talkBtn").disabled=on||alwaysOn;
+  $("alwaysBtn").disabled=on;
+}
+
+function stopWakeRecognition(){
+  wakeRecBusy=false;
+  if(!wakeRec) return Promise.resolve();
+  const r=wakeRec;
+  wakeRec=null;
+  return new Promise(resolve=>{
+    let settled=false;
+    const done=()=>{
+      if(settled) return;
+      settled=true;
+      try{ r.onend=null; r.onerror=null; r.onresult=null; }catch{}
+      resolve();
+    };
+    r.onend=done;
+    try{ r.stop(); }catch{ done(); return; }
+    try{ r.abort(); }catch{}
+    setTimeout(done, 500);
+  });
+}
+
+function startKeepalive(){
+  ensureCtx();
+  if(audioCtx.state==="suspended") audioCtx.resume();
+  if(!keepAliveNode){
+    const buf=audioCtx.createBuffer(1,1,22050);
+    keepAliveNode=audioCtx.createBufferSource();
+    keepAliveNode.buffer=buf;
+    keepAliveNode.loop=true;
+    keepAliveNode.connect(audioCtx.destination);
+    keepAliveNode.start();
+  }
+  if("wakeLock" in navigator&&!screenWakeLock){
+    navigator.wakeLock.request("screen").then(l=>{screenWakeLock=l; l.addEventListener("release",()=>{screenWakeLock=null});}).catch(()=>{});
+  }
+}
+
+function stopKeepalive(){
+  if(keepAliveNode){ try{ keepAliveNode.stop(); }catch{} keepAliveNode=null; }
+  if(screenWakeLock){ screenWakeLock.release().catch(()=>{}); screenWakeLock=null; }
+}
+
+function pauseHeyForMicBusy(){
+  const wasConvo=heyConvoActive;
+  if(capturing) endVoiceTurn(true);
+  heyConvoActive=false; alwaysOn=false; vadArmed=false;
+  releaseMic();
+  stopWakeRecognition();
+  if(!heyJarvisMode) return;
+  if(document.hidden){ pauseHeyBackground(); return; }
+  setState("standby","STANDBY","mic busy — retrying…");
+  $("micState").textContent="PAUSED";
+  setTimeout(async ()=>{
+    if(!heyJarvisMode||document.hidden) return;
+    if(wasConvo) await onWakeWordDetected(true);
+    else startWakeRecognition();
+  },2500);
+}
+
+function extractAfterWake(text){
+  const t=(text||"").trim();
+  for(const r of WAKE_PHRASES){
+    const m=t.match(r);
+    if(m){
+      return t.slice(m.index+m[0].length).replace(/^[,.\s:!-]+/,"").trim();
+    }
+  }
+  return "";
+}
+
+function scheduleMicWatchdog(){
+  clearTimeout(micWatchdogTimer);
+  micWatchdogTimer=setTimeout(async ()=>{
+    if(!heyConvoActive||capturing||!vadArmed||document.hidden) return;
+    if(level>0.008) return;
+    addMsg("sys","Mic not picking up — reconnecting…");
+    try{
+      await stopWakeRecognition();
+      await sleep(MIC_HANDOFF_MS);
+      await initMic({force:true});
+      await ensureAudioRunning();
+      armAlwaysListen(true);
+      scheduleMicWatchdog();
+    }catch(e){
+      pauseHeyForMicBusy();
+    }
+  },2800);
+}
+
+function scanWakeText(text){
+  const t=(text||"").toLowerCase().trim();
+  if(!t) return null;
+  if(STOP_PHRASES.some(r=>r.test(t))||t==="stop") return "stop";
+  if(WAKE_PHRASES.some(r=>r.test(t))) return "wake";
+  return null;
+}
+
+function startWakeRecognition(){
+  if(!heyJarvisMode||heyConvoActive||capturing||wakeRecBusy) return;
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){
+    addMsg("sys","Hey Jarvis needs Speech Recognition — use Safari and Add to Home Screen.");
+    return;
+  }
+  void (async ()=>{
+    await stopWakeRecognition();
+    if(!heyJarvisMode||heyConvoActive||capturing) return;
+    wakeRecBusy=true;
+    const rec=new SR();
+    wakeRec=rec;
+  rec.continuous=true;
+  rec.interimResults=true;
+  rec.lang="en-US";
+  rec.maxAlternatives=1;
+  rec.onstart=()=>{
+    wakeRecBusy=false;
+    if(heyJarvisMode&&!heyConvoActive){
+      setState("listening","HEY JARVIS","say Hey Jarvis…");
+      $("micState").textContent="WAKE WORD";
+    }
+  };
+  rec.onresult=(ev)=>{
+    for(let i=ev.resultIndex;i<ev.results.length;i++){
+      const txt=ev.results[i][0].transcript||"";
+      const hit=scanWakeText(txt);
+      if(hit==="stop"&&(heyJarvisMode||heyConvoActive)){
+        endHeySession(true);
+        return;
+      }
+      if(hit==="wake"&&heyJarvisMode&&!heyConvoActive&&!capturing){
+        onWakeWordDetected(false, extractAfterWake(txt));
+        return;
+      }
+    }
+  };
+  rec.onerror=(ev)=>{
+    wakeRecBusy=false;
+    const err=ev.error||"";
+    if(err==="aborted") return;
+    // iOS pauses mic when you leave the app — not a settings problem
+    if((err==="not-allowed"||err==="service-not-allowed")&&document.hidden){
+      pauseHeyBackground();
+      return;
+    }
+    if(err==="not-allowed"||err==="service-not-allowed"){
+      if(!micGranted){
+        warnHeyMicOnce("Microphone blocked.");
+        endHeySession(true);
+        return;
+      }
+      heySrFails++;
+      if(heySrFails>=3&&IS_IOS){
+        addMsg("sys","Wake word unavailable — listening continuously while Jarvis is open. Say Stop to quit.");
+        onWakeWordDetected(true);
+        return;
+      }
+      if(heyJarvisMode&&!heyConvoActive) setTimeout(startWakeRecognition,800);
+      return;
+    }
+    if(heyJarvisMode&&!heyConvoActive) setTimeout(startWakeRecognition,600);
+  };
+  rec.onend=()=>{
+    wakeRecBusy=false;
+    if(wakeRec===rec) wakeRec=null;
+    if(document.hidden&&heyJarvisMode){ pauseHeyBackground(); return; }
+    if(heyJarvisMode&&!heyConvoActive&&!capturing) setTimeout(startWakeRecognition,300);
+  };
+  try{ rec.start(); heySrFails=0; }catch(e){
+    wakeRecBusy=false;
+    if(heyJarvisMode&&!heyConvoActive) setTimeout(startWakeRecognition,800);
+  }
+  })();
+}
+
+async function onWakeWordDetected(skipMsg, pendingSpeech){
+  if(heyConvoActive||capturing) return;
+  await stopWakeRecognition();
+  heyConvoActive=true;
+  alwaysOn=true;
+  updateHeyUI();
+  setState("listening","HEY JARVIS","starting mic…");
+  $("micState").textContent="HANDOFF";
+  await sleep(MIC_HANDOFF_MS);
+  try{
+    await initMic({force:true});
+    await ensureAudioRunning();
+  }catch(err){
+    addMsg("sys","Mic blocked: "+err.message);
+    endHeySession(true);
+    return;
+  }
+  startKeepalive();
+  armAlwaysListen(false);
+  if(!skipMsg) addMsg("sys","Hey Jarvis — speak now. The level bar should move when you talk. Say Stop when done.");
+  scheduleMicWatchdog();
+  if(pendingSpeech && pendingSpeech.length>=4){
+    addMsg("sys","Heard: \""+pendingSpeech.slice(0,80)+(pendingSpeech.length>80?"…":"")+"\" — speak again if that was incomplete.");
+  }
+}
+
+function endHeySession(fullOff){
+  alwaysOn=false; heyConvoActive=false; vadArmed=false;
+  clearTimeout(micWatchdogTimer); micWatchdogTimer=null;
+  clearTimeout(rearmTimer); rearmTimer=null;
+  if(capturing) endVoiceTurn(true);
+  stopWakeRecognition();
+  if(fullOff){
+    heyJarvisMode=false;
+    heyBgPaused=false;
+    heySrFails=0;
+    stopKeepalive();
+    releaseMic();
+    $("levelBar").style.width="0%";
+    setState("standby","STANDBY");
+    $("micState").textContent="ready";
+    updateHeyUI();
+    return;
+  }
+  updateHeyUI();
+}
+
+async function toggleHeyJarvis(){
+  if(!wsReady){addMsg("sys","voice server offline");return}
+  if(heyJarvisMode||heyConvoActive){
+    endHeySession(true);
+    addMsg("sys","Hey Jarvis off.");
+    return;
+  }
+  if(alwaysOn||listenDo){addMsg("sys","Turn off Listen & Do first.");return}
+  if(capturing){addMsg("sys","Finish push-to-talk first.");return}
+  try{
+    await ensureMicPermission();
+  }catch(err){
+    warnHeyMicOnce("Microphone blocked.");
+    addMsg("sys",err.message||String(err));
+    return;
+  }
+  heyJarvisMode=true;
+  heySettingsWarned=false;
+  heyBgPaused=false;
+  updateHeyUI();
+  startKeepalive();
+  releaseMic();
+  startWakeRecognition();
+  addMsg("sys",IS_IOS
+    ? "Hey Jarvis on — keep Jarvis on screen (iOS cannot listen in other apps). Say Hey Jarvis, then talk. Say Stop to quit."
+    : "Hey Jarvis on — say Hey Jarvis to start talking. Say Stop to quit.");
+}
+
+document.addEventListener("visibilitychange",()=>{
+  if(!document.hidden) checkLinkAlive();
+  if(!heyJarvisMode&&!heyConvoActive) return;
+  if(document.hidden){
+    pauseHeyBackground();
+  }else{
+    setTimeout(()=>resumeHeyAfterForeground(),350);
+  }
+});
+addEventListener("pageshow",()=>{
+  checkLinkAlive();
+  if(!heyJarvisMode&&!heyConvoActive) return;
+  setTimeout(()=>resumeHeyAfterForeground(),350);
+});
+
+async function toggleAlwaysOn(){
+  if(heyJarvisMode||heyConvoActive){addMsg("sys","Turn off HEY JARVIS first.");return}
+  if(!wsReady){addMsg("sys","voice server offline");return}
+  if(alwaysOn||listenDo){
+    alwaysOn=false; listenDo=false; vadArmed=false;
+    clearTimeout(rearmTimer); rearmTimer=null;
+    clearTimeout(listenDoPartialTimer); listenDoPartialTimer=null;
+    if(capturing) endVoiceTurn(true);
+    $("alwaysBtn").textContent="LISTEN & DO";
+    $("alwaysBtn").classList.remove("on");
+    $("talkBtn").disabled=false;
+    $("micState").textContent="ready";
+    $("levelBar").style.width="0%";
+    setState("standby","STANDBY");
+    addMsg("sys","Listen & Do off.");
+    return;
+  }
+  if(capturing){
+    addMsg("sys","Finish or cancel push-to-talk first.");
     return;
   }
   try{await initMic()}catch(err){addMsg("sys","mic blocked: "+err.message);return}
-  stopPlayback();                       // barge-in
-  audioArrived=false;
-  ws.send(JSON.stringify({type:"start",sample_rate:16000,format:"pcm_s16le",channels:1,conversation:CONV}));
-  capturing=true;
-  $("talkBtn").textContent="■ STOP & SEND"; $("micState").textContent="LIVE";
-  setState("listening","LISTENING","CLICK AGAIN TO SEND");
+  alwaysOn=true;
+  listenDo=true;
+  listenDoSession=null;
+  listenDoLastPartial="";
+  ignoreAudio=true;
+  try{
+    const r=await fetch("/api/listen_do",{
+      method:"POST",
+      headers:jarvisAuthHeaders({"Content-Type":"application/json"}),
+      body:JSON.stringify({reset:true})
+    });
+    const j=await r.json();
+    if(j&&j.session_id) listenDoSession=j.session_id;
+  }catch{}
+  $("alwaysBtn").textContent="■ STOP";
+  $("alwaysBtn").classList.add("on");
+  $("talkBtn").disabled=true;
+  armAlwaysListen(false);
+  addMsg("sys","Listen & Do on — I act as you speak (no talk-back). Docs/Slides/Gmail: keep talking to type. A call stops listening. Press ■ STOP to exit.");
+}
+
+async function queueListenDoPartial(text){
+  if(!listenDo||!text) return;
+  const t=String(text).replace(/^…\s*/,"").trim();
+  if(!t||t===listenDoLastPartial) return;
+  clearTimeout(listenDoPartialTimer);
+  listenDoPartialTimer=setTimeout(async()=>{
+    if(!listenDo) return;
+    listenDoLastPartial=t;
+    try{
+      const r=await fetch("/api/listen_do",{
+        method:"POST",
+        headers:jarvisAuthHeaders({"Content-Type":"application/json"}),
+        body:JSON.stringify({text:t, session_id:listenDoSession, final:false})
+      });
+      const j=await r.json();
+      if(j&&j.session_id) listenDoSession=j.session_id;
+      if(j&&j.stop_listen){
+        addMsg("sys","Call started — Listen & Do stopped.");
+        toggleAlwaysOn();
+        return;
+      }
+      if(j&&j.actions&&j.actions.length){
+        j.actions.forEach(a=>{
+          try{ addActivity(a.action||"do",(a.message||"").slice(0,100)); }catch{}
+        });
+      }
+    }catch(err){}
+  }, 280);
+}
+
+async function toggleTalk(){
+  if(heyJarvisMode||heyConvoActive){addMsg("sys","Hey Jarvis is active — say Stop or tap ■ STOP on HEY JARVIS.");return}
+  if(alwaysOn||listenDo){addMsg("sys","Listen & Do is active — use ■ STOP on that button.");return}
+  if(!wsReady||ws.readyState!==WebSocket.OPEN){addMsg("sys","voice server offline — reconnecting…");reconnectNow();return}
+  if(capturing){ // stop talking
+    if(performance.now()-captureStartedAt<400) return; // accidental double-tap
+    endVoiceTurn(false);
+    return;
+  }
+  try{
+    await initMic({force:micSuspect});
+    micSuspect=false;
+    await ensureAudioRunning();
+  }catch(err){addMsg("sys","mic blocked: "+err.message+" — "+heyMicSettingsHint());return}
+  if(!workletNode||!micStreamLive()){
+    addMsg("sys","Mic not ready — tap ENGAGE again.");
+    return;
+  }
+  beginVoiceTurn(false);
 }
 $("talkBtn").onclick=toggleTalk;
-$("reactorWrap").onclick=toggleTalk;
+$("alwaysBtn").onclick=toggleAlwaysOn;
+$("heyBtn").onclick=toggleHeyJarvis;
+$("reactorWrap").onclick=()=>{
+  if(heyJarvisMode||heyConvoActive) toggleHeyJarvis();
+  else if(alwaysOn||listenDo) toggleAlwaysOn();
+  else toggleTalk();
+};
 $("stopBtn").onclick=stopRun;
+if($("stopFab")) $("stopFab").onclick=stopRun;
+updateHeyUI();
+
+function maybeAutoWakeFromUrl(){
+  const p=new URLSearchParams(location.search);
+  if(p.get("wake")!=="1"&&p.get("hey")!=="1") return;
+  if(!wsReady) return;
+  setTimeout(async()=>{
+    if(heyJarvisMode||heyConvoActive||alwaysOn) return;
+    addMsg("sys","Opened via Siri/shortcut — starting Hey Jarvis…");
+    try{ await toggleHeyJarvis(); }catch(e){ addMsg("sys","Could not auto-start: "+e); }
+  },800);
+}
+maybeAutoWakeFromUrl();
 
 /* ---- pop-up viewer ---- */
 const DASH_PROXY=`https://${location.hostname}:9443`;
@@ -634,27 +1728,277 @@ addEventListener("keydown",e=>{
   else stopRun();
 });
 addEventListener("keydown",e=>{
-  if(e.code==="Space"&&document.activeElement!==$("chatInput")){e.preventDefault();toggleTalk()}
+  if(e.code==="Space"&&document.activeElement!==$("chatInput")){
+    e.preventDefault();
+    if(alwaysOn) toggleAlwaysOn();
+    else if(heyJarvisMode||heyConvoActive) toggleHeyJarvis();
+    else toggleTalk();
+  }
 });
 
-/* ============================== typed chat ========================= */
-async function sendChat(){
-  const inp=$("chatInput"); const text=inp.value.trim(); if(!text)return;
-  inp.value=""; addMsg("you",text); setState("thinking","PROCESSING");
+/* ============================== typed + voice-note chat ========================= */
+let chatVocChunks=[], chatVocStartedAt=0, chatVocHold=false;
+let chatVocPointerId=null, chatVocStopQueued=false;
+let chatVocGen=0;
+const CHAT_VOC_MIN_MS=500;
+
+function jarvisAuthHeaders(extra){
+  return (window.jarvisAuth && jarvisAuth.authHeaders)
+    ? jarvisAuth.authHeaders(extra)
+    : Object.assign({}, extra||{});
+}
+
+function addVoiceNoteMsg(transcript, secs){
+  const el=document.createElement("div");
+  el.className="msg you voice";
+  const dur=secs!=null?Math.max(1,Math.round(secs))+"s":"";
+  el.innerHTML=`<div class="vocWave">VOICE NOTE${dur?" · "+dur:""}</div>`
+    +`<div class="vocText">${esc(transcript||"(empty)")}</div>`;
+  feed.appendChild(el); feed.scrollTop=feed.scrollHeight;
+  return el;
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
+
+function concatPcmChunks(chunks){
+  let n=0; for(const c of chunks) n+=(c.byteLength||c.length||0);
+  const out=new Uint8Array(n); let o=0;
+  for(const c of chunks){
+    let u;
+    if(c instanceof ArrayBuffer) u=new Uint8Array(c);
+    else if(ArrayBuffer.isView(c)) u=new Uint8Array(c.buffer, c.byteOffset, c.byteLength);
+    else u=new Uint8Array(c);
+    out.set(u,o); o+=u.byteLength;
+  }
+  return out.buffer;
+}
+
+async function applyChatReply(j, userText){
+  (j.tools||[]).forEach(t=>addActivity("",t.name,t.preview));
+  addMsg("jarvis",j.text||"(no reply)");
+  if(j.translated_from&&j.translated_to&&j.translated_from!==j.translated_to){
+    addMsg("sys","AR → "+j.translated_to);
+  }
+  if(j.memories_saved&&j.memories_saved.length){
+    const labels=j.memories_saved.map(f=>f.title||f.value).filter(Boolean).join(", ");
+    addMsg("sys","Saved to Skills / Memory: "+labels);
+    if(typeof refreshSkills==="function") refreshSkills().catch(()=>{});
+  }
+  if(userText&&/^\/(new|reset|clear)\b/i.test(userText)){
+    setTimeout(()=>{feed.innerHTML="";addMsg("sys","conversation reset");},400);
+  }
+  if(j.simple===true) addMsg("sys","Simple mode ON - answers only. /full to undo.");
+  if(j.simple===false) addMsg("sys","Full mode ON.");
+}
+
+function addPhotoMsg(dataUrl, caption){
+  const el=document.createElement("div");
+  el.className="msg you photo";
+  el.innerHTML=`<div>${esc(caption||"Photo")}</div><img src="${dataUrl}" alt="photo">`;
+  feed.appendChild(el); feed.scrollTop=feed.scrollHeight;
+  return el;
+}
+
+async function compressImageFile(file, maxSide=1600, quality=0.82){
+  const bmp = await createImageBitmap(file);
+  const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+  const w = Math.max(1, Math.round(bmp.width * scale));
+  const h = Math.max(1, Math.round(bmp.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(bmp, 0, 0, w, h);
+  try{ bmp.close(); }catch{}
+  return canvas.toDataURL("image/jpeg", quality);
+}
+
+async function sendChatPhoto(file){
+  if(!file) return;
+  if(chatVocRecording||chatVocStarting) return;
+  setState("thinking","PROCESSING","reading photo…");
   try{
-    const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({input:text,conversation:CONV})});
+    const dataUrl = await compressImageFile(file);
+    const caption = ($("chatInput").value||"").trim();
+    $("chatInput").value="";
+    addPhotoMsg(dataUrl, caption || "Photo");
+    const r=await fetch("/api/chat",{
+      method:"POST",
+      headers:jarvisAuthHeaders({"Content-Type":"application/json"}),
+      body:JSON.stringify({input:caption, conversation:CONV, image:dataUrl})
+    });
+    const j=await r.json();
+    if(!r.ok) throw new Error(j.error||r.status);
+    await applyChatReply(j, caption);
+  }catch(err){
+    addMsg("sys","photo error: "+err.message);
+  }
+  if(state!=="listening") setState("standby","STANDBY");
+}
+
+async function runPcTask(e){
+  const text=(e.text||"").trim(); if(!text||!e.task_id) return;
+  addMsg("sys","From your phone (/pc):");
+  addMsg("you",text); setState("thinking","PROCESSING");
+  try{
+    const r=await fetch("/api/chat",{method:"POST",headers:jarvisAuthHeaders({"Content-Type":"application/json"}),
+      body:JSON.stringify({input:text,conversation:CONV,device:"pc",pc_task_id:e.task_id})});
     const j=await r.json();
     if(!r.ok)throw new Error(j.error||r.status);
-    (j.tools||[]).forEach(t=>addActivity("",t.name,t.preview));
-    addMsg("jarvis",j.text||"(no reply)");
-    if(/^\/(new|reset|clear)\b/i.test(text)){     // slash reset → also clear the visible feed
-      setTimeout(()=>{feed.innerHTML="";addMsg("sys","conversation reset");},800);
-    }
+    await applyChatReply(j, text);
+  }catch(err){ addMsg("sys","pc task error: "+err.message); }
+  if(state!=="listening")setState("standby","STANDBY");
+}
+
+async function sendChat(){
+  const inp=$("chatInput"); const text=inp.value.trim(); if(!text)return;
+  if(chatVocRecording||chatVocStarting) return;
+  inp.value=""; addMsg("you",text); setState("thinking","PROCESSING");
+  if(IS_PHONE_CLIENT&&/^\/pc(\s|$)/i.test(text)) addMsg("sys","Sending to the Jarvis window on your PC…");
+  try{
+    const r=await fetch("/api/chat",{method:"POST",headers:jarvisAuthHeaders({"Content-Type":"application/json"}),
+      body:JSON.stringify({input:text,conversation:CONV,device:IS_PHONE_CLIENT?"phone":"pc"})});
+    const j=await r.json();
+    if(!r.ok)throw new Error(j.error||r.status);
+    await applyChatReply(j, text);
   }catch(err){ addMsg("sys","chat error: "+err.message); }
   if(state!=="listening")setState("standby","STANDBY");
 }
+
+async function startChatVoiceNote(fromHold){
+  if(chatVocRecording||chatVocSending||chatVocStarting) return;
+  // Don't fight an active push-to-talk capture; allow during always-on idle
+  if(capturing){
+    addMsg("sys","Finish speaking on ENGAGE first, then send a voice note.");
+    return;
+  }
+  if(state==="thinking"||state==="tool"||state==="speaking"){
+    addMsg("sys","Wait for Jarvis to finish, then send a voice note.");
+    return;
+  }
+  chatVocStarting=true;
+  chatVocStopQueued=false;
+  const gen=++chatVocGen;
+  // Freeze always-on / Hey Jarvis VAD so it cannot steal this mic stream
+  vadArmed=false;
+  try{
+    await initMic();
+    await ensureAudioRunning();
+  }catch(err){
+    chatVocStarting=false;
+    addMsg("sys","mic needed for voice notes: "+err.message);
+    return;
+  }
+  if(gen!==chatVocGen){ chatVocStarting=false; return; }
+  if(!workletNode||!micStreamLive()){
+    chatVocStarting=false;
+    addMsg("sys","Mic worklet not ready — tap MIC again.");
+    return;
+  }
+  chatVocChunks=[]; chatVocRecording=true; chatVocHold=!!fromHold;
+  chatVocStartedAt=performance.now();
+  chatVocStarting=false;
+  $("chatVocBtn").classList.add("rec");
+  $("chatVocBtn").textContent="REC";
+  $("chatInput").placeholder="Recording… release MIC to send";
+  setState("listening","VOICE NOTE","hold MIC · release to send");
+  $("micState").textContent="VOICE NOTE";
+  // If user already released during mic init, finish now
+  if(chatVocStopQueued){
+    chatVocStopQueued=false;
+    stopChatVoiceNoteAndSend();
+  }
+}
+
+async function stopChatVoiceNoteAndSend(){
+  if(chatVocStarting){
+    chatVocStopQueued=true;
+    return;
+  }
+  if(!chatVocRecording||chatVocSending) return;
+  const heldMs=performance.now()-chatVocStartedAt;
+  chatVocRecording=false; chatVocHold=false; chatVocPointerId=null;
+  $("chatVocBtn").classList.remove("rec");
+  $("chatVocBtn").textContent="MIC";
+  $("chatInput").placeholder="Type a message… · CAM for photo · /simple · /new";
+  $("levelBar").style.width="0%";
+  const secs=heldMs/1000;
+  const pcm=concatPcmChunks(chatVocChunks);
+  chatVocChunks=[];
+  if(heldMs<CHAT_VOC_MIN_MS || !pcm || pcm.byteLength<3200){
+    addMsg("sys","Voice note too short — hold MIC and speak, then release.");
+    if(alwaysOn||heyConvoActive) scheduleAlwaysRearm();
+    else if(state!=="listening")setState("standby","STANDBY");
+    return;
+  }
+  chatVocSending=true;
+  addVoiceNoteMsg("…transcribing", secs);
+  setState("thinking","PROCESSING","voice note…");
+  try{
+    const r=await fetch("/api/chat/voice?conversation="+encodeURIComponent(CONV),{
+      method:"POST",
+      headers:jarvisAuthHeaders({"Content-Type":"application/octet-stream"}),
+      body:pcm
+    });
+    const j=await r.json().catch(()=>({}));
+    const last=feed.querySelector(".msg.you.voice:last-child");
+    if(last){
+      const t=j.transcript||j.error||"(could not understand)";
+      last.querySelector(".vocText").textContent=t;
+      last.querySelector(".vocWave").textContent="VOICE NOTE · "+Math.max(1,Math.round(secs))+"s";
+    }
+    if(j.unclear){
+      addMsg("jarvis", j.text||"I didn't catch that — try the voice note again.");
+    }else if(!r.ok){
+      throw new Error(j.error||j.text||("HTTP "+r.status));
+    }else if(!j.text && j.error){
+      addMsg("sys","voice note: "+j.error);
+    }else{
+      await applyChatReply(j, j.transcript||"");
+    }
+  }catch(err){ addMsg("sys","voice note error: "+err.message); }
+  chatVocSending=false;
+  if(alwaysOn||heyConvoActive) scheduleAlwaysRearm();
+  else if(state!=="listening")setState("standby","STANDBY");
+}
+
+(function wireChatVoc(){
+  const btn=$("chatVocBtn");
+  if(!btn) return;
+  const down=e=>{
+    if(e.button!=null&&e.button!==0) return;
+    e.preventDefault();
+    try{ btn.setPointerCapture(e.pointerId); }catch{}
+    chatVocPointerId=e.pointerId;
+    if(chatVocRecording&&!chatVocHold){ stopChatVoiceNoteAndSend(); return; }
+    startChatVoiceNote(true);
+  };
+  const up=e=>{
+    if(chatVocPointerId!=null && e.pointerId!==chatVocPointerId) return;
+    // Release while mic still opening → queue stop for when record starts
+    if(chatVocStarting){
+      chatVocStopQueued=true;
+      e.preventDefault();
+      try{ btn.releasePointerCapture(e.pointerId); }catch{}
+      return;
+    }
+    if(!chatVocRecording||!chatVocHold) return;
+    e.preventDefault();
+    try{ btn.releasePointerCapture(e.pointerId); }catch{}
+    stopChatVoiceNoteAndSend();
+  };
+  btn.addEventListener("pointerdown",down);
+  btn.addEventListener("pointerup",up);
+  btn.addEventListener("pointercancel",up);
+  btn.addEventListener("lostpointercapture",up);
+  // Do NOT stop on pointerleave — that killed notes when the finger moved a pixel
+})();
+
 $("sendBtn").onclick=sendChat;
+$("chatCamBtn").onclick=()=>$("chatCamInput").click();
+$("chatCamInput").onchange=async (e)=>{
+  const f=e.target.files&&e.target.files[0];
+  e.target.value="";
+  if(f) await sendChatPhoto(f);
+};
 $("clearBtn").onclick=()=>{feed.innerHTML="";addMsg("sys","chat cleared (history stays in Hermes — type /new to reset the conversation)");};
 $("chatInput").addEventListener("keydown",e=>{if(e.key==="Enter")sendChat()});
 
@@ -676,8 +2020,12 @@ async function refreshSkills(){
   try{
     const s=await jget("/v1/skills"); const list=Array.isArray(s)?s:(s.data||s.skills||[]);
     $("skillCount").textContent=list.length;
-    $("skillsList").innerHTML=list.slice(0,14).map(x=>`<div>▸ ${x.name||x}</div>`).join("");
+    $("skillsList").innerHTML=list.slice(0,8).map(x=>`<div>▸ ${x.name||x}</div>`).join("");
   }catch{ $("skillCount").textContent="?"; }
+  try{
+    const m=await fetch("/api/memory").then(r=>r.json());
+    $("memCount").textContent=(m.count!=null?m.count:(m.facts||[]).length);
+  }catch{ if($("memCount")) $("memCount").textContent="?"; }
 }
 async function refreshJobs(){
   try{
@@ -710,14 +2058,16 @@ async function refreshUsage(){
     $("uTok").textContent=`${fmtK(t.llm_in||0)} in / ${fmtK(t.llm_out||0)} out`;
     $("uTurns").textContent=t.turns||0;
     if(j.llm?.today_cost!=null){$("uCostRow").style.display="flex";$("uCost").textContent="$"+j.llm.today_cost.toFixed(2)}
-    const e=j.elevenlabs;
-    if(e&&e.limit){
-      const pct=Math.round(e.used/e.limit*100);
-      $("uTts").textContent=`${fmtK(e.used)} / ${fmtK(e.limit)} (${100-pct}% left)`;
-      $("ttsBar").style.width=pct+"%";
-      $("uTts").className=pct>90?"err":pct>70?"warn":"";
+    const k=j.kokoro;
+    if(k&&k.online){
+      $("uTts").textContent=(k.voice_name||k.voice||"kokoro")+" · LOCAL";
+      $("uTts").className="";
+      $("ttsBar").style.width="100%";
+    }else if(k){
+      $("uTts").textContent="Kokoro offline";
+      $("uTts").className="err";
+      $("ttsBar").style.width="0%";
     }else{
-      // quota API unavailable (key needs user_read permission) → local tally
       $("uTts").textContent=fmtK(t.tts_chars||0)+" chars today";
       $("ttsBar").style.width="0%";
     }
@@ -816,30 +2166,169 @@ function dismissPanel(p){
 function dismissAllPanels(){document.querySelectorAll(".holo").forEach(dismissPanel)}
 window.summonPanel=summonPanel; window.dismissAllPanels=dismissAllPanels;
 
+/* ============================== chatgpt model picker ================ */
+const FALLBACK_MODELS = [
+  {id:"gpt-5.6-sol", label:"GPT-5.6 Sol (Codex)", tier:"flagship"},
+  {id:"gpt-5.6-sol-pro", label:"GPT-5.6 Sol Pro", tier:"pro"},
+  {id:"gpt-5.6-terra", label:"GPT-5.6 Terra (Codex)", tier:"flagship"},
+  {id:"gpt-5.6-terra-pro", label:"GPT-5.6 Terra Pro", tier:"pro"},
+  {id:"gpt-5.6-luna", label:"GPT-5.6 Luna (Codex)", tier:"flagship"},
+  {id:"gpt-5.6-luna-pro", label:"GPT-5.6 Luna Pro", tier:"pro"},
+  {id:"gpt-5.5", label:"GPT-5.5", tier:"standard"},
+  {id:"gpt-5.5-pro", label:"GPT-5.5 Pro", tier:"pro"},
+  {id:"gpt-5.4", label:"GPT-5.4", tier:"standard"},
+  {id:"gpt-5.4-mini", label:"GPT-5.4 Mini", tier:"fast"},
+  {id:"gpt-5.3-codex", label:"GPT-5.3 Codex", tier:"coding"},
+  {id:"gpt-5.3-codex-spark", label:"GPT-5.3 Spark (Pro)", tier:"coding"},
+];
+let currentModelId = "";
+let modelCatalog = FALLBACK_MODELS.slice();
+
+function showModelToast(msg){
+  const t=$("modelToast"); if(!t) return;
+  t.textContent=msg;
+  t.classList.remove("show");
+  void t.offsetWidth;
+  t.classList.add("show");
+}
+function closeModelMenu(){
+  const menu=$("modelMenu"), scrim=$("modelScrim"), btn=$("modelBtn");
+  if(menu) menu.classList.remove("open");
+  if(scrim) scrim.classList.remove("open");
+  if(btn) btn.setAttribute("aria-expanded","false");
+}
+function positionModelMenu(){
+  const menu=$("modelMenu"), btn=$("modelBtn");
+  if(!menu||!btn) return;
+  const r=btn.getBoundingClientRect();
+  const gap=6;
+  const vw=window.innerWidth, vh=window.innerHeight;
+  const mobile=vw<=880;
+  menu.style.top=(r.bottom+gap)+"px";
+  if(mobile){
+    menu.style.left="8px";
+    menu.style.right="8px";
+    menu.style.width="auto";
+  }else{
+    menu.style.right="";
+    menu.style.left="";
+    const width=Math.max(260, r.width);
+    let left=r.right-width;
+    if(left<8) left=8;
+    if(left+width>vw-8) left=Math.max(8, vw-8-width);
+    menu.style.left=left+"px";
+    menu.style.width=width+"px";
+  }
+  // If not enough space below, open upward when possible
+  const maxH=Math.min(0.7*vh, 440);
+  const spaceBelow=vh-(r.bottom+gap)-8;
+  if(spaceBelow<160 && r.top>spaceBelow){
+    menu.style.top="auto";
+    menu.style.bottom=(vh-r.top+gap)+"px";
+    menu.style.maxHeight=Math.min(maxH, r.top-16)+"px";
+  }else{
+    menu.style.bottom="auto";
+    menu.style.maxHeight=Math.min(maxH, Math.max(160, spaceBelow))+"px";
+  }
+}
+function openModelMenu(){
+  const menu=$("modelMenu"), scrim=$("modelScrim"), btn=$("modelBtn");
+  if(!menu) return;
+  if(!menu.querySelector("button[data-model]")){
+    renderModelMenu(modelCatalog, currentModelId);
+  }
+  positionModelMenu();
+  menu.classList.add("open");
+  if(scrim) scrim.classList.add("open");
+  if(btn) btn.setAttribute("aria-expanded","true");
+}
+function toggleModelMenu(e){
+  if(e){ e.preventDefault(); e.stopPropagation(); }
+  const menu=$("modelMenu");
+  if(menu && menu.classList.contains("open")) closeModelMenu();
+  else openModelMenu();
+}
+function renderModelMenu(models, selected){
+  const menu=$("modelMenu"); if(!menu) return;
+  const list=(models&&models.length)?models:FALLBACK_MODELS;
+  modelCatalog=list;
+  const head=`<div class="mh">CHATGPT / CODEX MODELS</div>`;
+  const buttons=list.map(m=>{
+    const on=m.id===selected?" on":"";
+    const tier=m.tier?`<span class="tier">${m.tier}</span>`:"";
+    return `<button type="button" role="menuitem" data-model="${m.id}" class="${on.trim()}"><span>${m.label||m.id}</span>${tier}</button>`;
+  }).join("");
+  menu.innerHTML=head+buttons;
+  menu.querySelectorAll("button[data-model]").forEach(btn=>{
+    btn.onclick=async(ev)=>{
+      ev.preventDefault();
+      ev.stopPropagation();
+      const id=btn.dataset.model;
+      closeModelMenu();
+      if(!id||id===currentModelId) return;
+      try{
+        const r=await fetch("/api/model",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({model:id}),
+        });
+        const j=await r.json().catch(()=>({}));
+        if(!r.ok||!j.ok) throw new Error(j.error||r.status);
+        currentModelId=j.model;
+        $("modelVal").textContent=j.label||j.model;
+        renderModelMenu(j.models||list, j.model);
+        showModelToast("BRAIN → "+(j.label||j.model));
+        addMsg("sys","ChatGPT brain model set to "+(j.label||j.model)+".");
+        const brain=$("mBrain"); if(brain) brain.textContent=j.label||j.model;
+      }catch(err){
+        showModelToast("MODEL CHANGE FAILED");
+        addMsg("sys","Could not change model: "+(err.message||err));
+      }
+    };
+  });
+}
+async function loadModelPicker(){
+  try{
+    const r=await fetch("/api/model");
+    if(!r.ok) throw new Error(r.status);
+    const j=await r.json();
+    currentModelId=j.model||"";
+    $("modelVal").textContent=j.label||j.model||"—";
+    renderModelMenu(j.models||FALLBACK_MODELS, currentModelId);
+    const brain=$("mBrain"); if(brain && j.label) brain.textContent=j.label;
+  }catch(err){
+    console.warn("model picker load failed", err);
+    currentModelId=FALLBACK_MODELS[0].id;
+    $("modelVal").textContent=FALLBACK_MODELS[0].label;
+    renderModelMenu(FALLBACK_MODELS, currentModelId);
+  }
+}
+$("modelBtn")&&($("modelBtn").onclick=toggleModelMenu);
+$("modelScrim")&&($("modelScrim").onclick=closeModelMenu);
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeModelMenu(); });
+addEventListener("resize",()=>{ if($("modelMenu")?.classList.contains("open")) positionModelMenu(); });
+addEventListener("scroll",()=>{ if($("modelMenu")?.classList.contains("open")) positionModelMenu(); }, true);
+loadModelPicker();
+
 /* ============================== auth gate ========================== */
 async function checkAuth(){
-  try{
-    const r=await fetch("/api/usage");
-    if(r.status===401){showPinGate();return false}
-  }catch{}
+  if (window.jarvisAuth) return jarvisAuth.requireAuth();
   return true;
 }
-function showPinGate(){
-  $("pinGate").style.display="flex";
-  $("pinInput").focus();
-}
-$("pinBtn").onclick=async()=>{
+$("pinBtn")&&($("pinBtn").onclick=async()=>{
   const v=$("pinInput").value.trim(); if(!v)return;
-  document.cookie=`jarvis_token=${encodeURIComponent(v)}; path=/; max-age=31536000; secure; samesite=lax`;
-  const r=await fetch("/api/usage");
+  if (window.jarvisAuth) jarvisAuth.saveToken(v);
+  else {
+    try{ localStorage.setItem("jarvis_token", v); }catch{}
+  }
+  const r=await fetch("/api/usage",{headers:jarvisAuthHeaders()});
   if(r.status===401){$("pinMsg").textContent="ACCESS DENIED";$("pinInput").value="";return}
   location.reload();
-};
+});
 $("pinInput")&&$("pinInput").addEventListener("keydown",e=>{if(e.key==="Enter")$("pinBtn").click()});
 checkAuth();
 
 /* ============================== boot sequence ====================== */
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const BOOT_LINES=[
   ["INITIALIZING NEURAL INTERFACE",380],["LOADING HUD MODULES",300],
   ["CONNECTING HERMES CORE",650],["VOICE LINK ESTABLISHED",420],
@@ -880,6 +2369,20 @@ addEventListener("keydown",e=>{
 bootSequence(new URLSearchParams(location.search).get("boot")==="full");
 
 addMsg("sys","Jarvis HUD online. Click the ring or press Space to talk.");
+
+setTimeout(async () => {
+  try {
+    const r = await fetch("/api/briefing");
+    if (r.ok) {
+      const b = await r.json();
+      if (b && b.spoken_text) {
+        addMsg("jarvis", "📋 [DAILY BRIEFING] " + b.spoken_text);
+      }
+    }
+  } catch (err) {
+    console.warn("Briefing error:", err);
+  }
+}, 1200);
 </script>
 </body>
 </html>

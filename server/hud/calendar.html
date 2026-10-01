@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JARVIS · Calendar</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#050b14">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050b14; --panel:#0a1624; --line:#123048;
+  --cyan:#00e5ff; --cyan-dim:#0a7f96; --teal:#19f0d8;
+  --amber:#ffb300; --red:#ff4d5e; --txt:#9fd8e8; --txt-dim:#4d7d92;
+  --due:#ff8a65; --hw:#64b5f6; --sch:#81c784;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%; background:radial-gradient(ellipse at 50% 0%, #0a1a2c 0%, var(--bg) 55%);
+  color:var(--txt); font-family:'Rajdhani',sans-serif}
+body{padding:10px 12px 18px; max-width:520px; margin:0 auto}
+a.back{display:inline-block; font-family:'Orbitron'; font-size:9px; letter-spacing:2px;
+  color:var(--txt-dim); text-decoration:none; margin-bottom:8px}
+a.back:hover{color:var(--cyan)}
+header{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:10px}
+header h1{font-family:'Orbitron'; font-size:15px; letter-spacing:4px; color:var(--cyan)}
+header .sub{font-size:11px; color:var(--txt-dim); letter-spacing:1px}
+.tabs{display:flex; gap:6px; margin-bottom:10px}
+.tab{flex:1; background:#081523; border:1px solid var(--line); color:var(--txt-dim);
+  font-family:'Orbitron'; font-size:9px; letter-spacing:1.5px; padding:8px 4px; cursor:pointer}
+.tab.on{color:var(--cyan); border-color:var(--cyan-dim); box-shadow:0 0 10px #00e5ff22}
+.panel{border:1px solid var(--line); background:var(--panel); padding:10px; margin-bottom:10px}
+.nav{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; gap:6px}
+.nav h2{font-family:'Orbitron'; font-size:12px; letter-spacing:2px; color:var(--teal)}
+.nav button{background:#0a2435; border:1px solid var(--line); color:var(--cyan);
+  font-family:'Orbitron'; font-size:11px; padding:4px 10px; cursor:pointer}
+.grid{display:grid; grid-template-columns:repeat(7,1fr); gap:3px}
+.dow{text-align:center; font-size:10px; color:var(--txt-dim); letter-spacing:1px; padding:2px 0}
+.cell{aspect-ratio:1; min-height:0; border:1px solid transparent; background:#06101c;
+  font-size:12px; color:var(--txt); display:flex; flex-direction:column; align-items:center;
+  justify-content:flex-start; padding:3px 1px 2px; cursor:pointer; position:relative}
+.cell.muted{opacity:.35}
+.cell.today{border-color:var(--cyan-dim); box-shadow:inset 0 0 8px #00e5ff22}
+.cell.sel{border-color:var(--cyan)}
+.cell .n{font-weight:600; line-height:1.1}
+.dots{display:flex; gap:2px; margin-top:2px; flex-wrap:wrap; justify-content:center}
+.dots i{width:4px; height:4px; border-radius:50%; display:block}
+.dots i.due{background:var(--due)} .dots i.homework{background:var(--hw)}
+.dots i.other{background:var(--txt-dim)} .dots i.schedule{background:var(--sch)}
+.dots i.holiday{background:#ffd54f}
+.list{display:flex; flex-direction:column; gap:6px; max-height:42vh; overflow-y:auto}
+.item{display:grid; grid-template-columns:1fr auto; gap:6px; align-items:start;
+  border:1px solid var(--line); background:#06101c; padding:8px 9px}
+.item .t{font-size:14px; color:#cfeefb; font-weight:600; line-height:1.2}
+.item .m{font-size:11px; color:var(--txt-dim); margin-top:2px}
+.badge{display:inline-block; font-size:9px; letter-spacing:1px; padding:1px 5px;
+  border:1px solid var(--line); color:var(--txt-dim); margin-right:4px; text-transform:uppercase}
+.badge.due{color:var(--due); border-color:#5a3028}
+.badge.homework{color:var(--hw); border-color:#1e3a5a}
+.badge.schedule{color:var(--sch); border-color:#2a4a30}
+.badge.holiday{color:#ffd54f; border-color:#5a4a18}
+.badge.class{color:var(--teal); border-color:#1a4a44}
+.del{background:#240a0e; border:1px solid #7a2a33; color:var(--red);
+  font-family:'Orbitron'; font-size:9px; letter-spacing:1px; padding:5px 8px; cursor:pointer}
+.del:hover{background:#3a0e15}
+.empty{font-size:13px; color:var(--txt-dim); text-align:center; padding:18px 8px}
+.hint{font-size:11px; color:var(--txt-dim); margin-top:8px; line-height:1.35}
+.sch-day{margin-bottom:8px}
+.sch-day h3{font-family:'Orbitron'; font-size:10px; letter-spacing:2px; color:var(--cyan);
+  border-bottom:1px solid var(--line); padding-bottom:3px; margin-bottom:6px}
+.day-pills{display:flex; gap:4px; flex-wrap:wrap; margin-bottom:10px}
+.day-pills button{flex:1; min-width:38px; background:#081523; border:1px solid var(--line);
+  color:var(--txt-dim); font-family:'Orbitron'; font-size:9px; letter-spacing:1px; padding:7px 2px; cursor:pointer}
+.day-pills button.on{color:var(--cyan); border-color:var(--cyan-dim); box-shadow:0 0 8px #00e5ff22}
+.day-pills button.today-mark{border-color:#2a5a40; color:var(--sch)}
+.hero-day{font-family:'Orbitron'; font-size:13px; letter-spacing:2px; color:var(--teal); margin-bottom:4px}
+.hero-sub{font-size:12px; color:var(--txt-dim); margin-bottom:10px}
+.time-col{font-family:'Orbitron'; font-size:11px; color:var(--amber); letter-spacing:1px; min-width:72px}
+.class-row{display:grid; grid-template-columns:78px 1fr auto; gap:8px; align-items:center;
+  border:1px solid var(--line); background:#06101c; padding:10px 9px; margin-bottom:6px}
+.class-row .name{font-size:15px; color:#cfeefb; font-weight:600}
+.class-row .meta{font-size:11px; color:var(--txt-dim); margin-top:2px}
+@media (min-width:700px){
+  body{max-width:560px; padding-top:16px}
+  .list{max-height:48vh}
+}
+</style>
+</head>
+<body>
+<a class="back" href="./" id="backHud">← HUD</a>
+<header>
+  <h1>CALENDAR</h1>
+  <span class="sub" id="stamp">—</span>
+</header>
+<div class="tabs">
+  <button class="tab on" id="tabCal" type="button">CALENDAR</button>
+  <button class="tab" id="tabSchool" type="button">SCHOOL</button>
+  <button class="tab" id="tabSch" type="button">WEEK</button>
+</div>
+
+<section id="viewCal">
+  <div class="panel">
+    <div class="nav">
+      <button type="button" id="prevM">‹</button>
+      <h2 id="monthLabel">—</h2>
+      <button type="button" id="nextM">›</button>
+    </div>
+    <div class="grid" id="dow"></div>
+    <div class="grid" id="monthGrid" style="margin-top:4px"></div>
+  </div>
+  <div class="panel">
+    <div class="nav"><h2 id="dayLabel">UPCOMING</h2><button type="button" id="showAll">ALL</button></div>
+    <div class="list" id="eventList"></div>
+    <p class="hint">Say “add homework Math due Friday”, or send a photo of your yearly schedule / holidays — Jarvis saves holidays (not homework) and reminds you when a break is coming or ending.</p>
+  </div>
+</section>
+
+<section id="viewSchool" style="display:none">
+  <div class="panel">
+    <div class="hero-day" id="schoolHero">TODAY</div>
+    <div class="hero-sub" id="schoolSub">Your university / school classes</div>
+    <div class="day-pills" id="schoolPills"></div>
+    <div id="schoolClasses"></div>
+    <div id="schoolEvents" style="margin-top:10px"></div>
+    <p class="hint">Tell Jarvis your classes (“Mondays 9am Math, 11am Physics”) or “add class Chemistry on Wednesday at 2pm”. This view flips every day to that day’s timetable.</p>
+  </div>
+</section>
+
+<section id="viewSch" style="display:none">
+  <div class="panel">
+    <div class="nav"><h2>WEEKLY SCHEDULE</h2></div>
+    <div id="schList"></div>
+    <p class="hint">Full week view. Delete any block with ✕.</p>
+  </div>
+</section>
+
+<script src="/hud/jarvis-auth.js"></script>
+<script>
+"use strict";
+const DAYS=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const DOW=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const DAY_KEYS=["mon","tue","wed","thu","fri","sat","sun"];
+const DAY_LABEL={mon:"MONDAY",tue:"TUESDAY",wed:"WEDNESDAY",thu:"THURSDAY",fri:"FRIDAY",sat:"SATURDAY",sun:"SUNDAY"};
+const DAY_SHORT={mon:"MON",tue:"TUE",wed:"WED",thu:"THU",fri:"FRI",sat:"SAT",sun:"SUN"};
+
+let events=[], schedule=[], viewY, viewM, selected=null, schoolDay=null;
+
+const $=id=>document.getElementById(id);
+
+function todayKey(){
+  return DAY_KEYS[(new Date().getDay()+6)%7];
+}
+
+async function api(path, opts){
+  return jarvisAuth.api(path, opts);
+}
+
+async function load(){
+  const j=await api("/api/calendar");
+  events=j.events||[]; schedule=j.schedule||[];
+  $("stamp").textContent=j.updated_at?("upd "+j.updated_at.replace("T"," ").slice(0,16)):"local";
+  if(!schoolDay) schoolDay=todayKey();
+  renderMonth(); renderEvents(); renderSchedule(); renderSchool();
+}
+
+function eventsOn(ymd){
+  return events.filter(e=>e.date===ymd);
+}
+
+function ymd(y,m,d){
+  return `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+}
+
+function dateForWeekday(code){
+  const now=new Date();
+  const todayIdx=(now.getDay()+6)%7;
+  const want=DAY_KEYS.indexOf(code);
+  const delta=want-todayIdx;
+  const d=new Date(now.getFullYear(), now.getMonth(), now.getDate()+delta);
+  return ymd(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function renderMonth(){
+  const now=new Date();
+  $("monthLabel").textContent=new Date(viewY,viewM,1).toLocaleString(undefined,{month:"long",year:"numeric"}).toUpperCase();
+  const dow=$("dow"); dow.innerHTML="";
+  DOW.forEach(d=>{const s=document.createElement("div"); s.className="dow"; s.textContent=d[0]; dow.appendChild(s);});
+  const grid=$("monthGrid"); grid.innerHTML="";
+  const first=new Date(viewY,viewM,1);
+  let start=(first.getDay()+6)%7;
+  const daysIn=new Date(viewY,viewM+1,0).getDate();
+  const prevDays=new Date(viewY,viewM,0).getDate();
+  for(let i=0;i<42;i++){
+    const cell=document.createElement("button");
+    cell.type="button"; cell.className="cell";
+    let y=viewY,m=viewM,day,mute=false;
+    if(i<start){ day=prevDays-start+i+1; m=viewM-1; if(m<0){m=11;y--;} mute=true; }
+    else if(i>=start+daysIn){ day=i-(start+daysIn)+1; m=viewM+1; if(m>11){m=0;y++;} mute=true; }
+    else day=i-start+1;
+    const key=ymd(y,m,day);
+    if(mute) cell.classList.add("muted");
+    if(y===now.getFullYear()&&m===now.getMonth()&&day===now.getDate()) cell.classList.add("today");
+    if(selected===key) cell.classList.add("sel");
+    cell.innerHTML=`<span class="n">${day}</span>`;
+    const on=eventsOn(key);
+    if(on.length){
+      const dots=document.createElement("div"); dots.className="dots";
+      const kinds=[...new Set(on.map(e=>e.kind||"other"))].slice(0,3);
+      kinds.forEach(k=>{const i=document.createElement("i"); i.className=k; dots.appendChild(i);});
+      cell.appendChild(dots);
+    }
+    cell.onclick=()=>{ selected=key; renderMonth(); renderEvents(); };
+    grid.appendChild(cell);
+  }
+}
+
+function renderEvents(){
+  const list=$("eventList"); list.innerHTML="";
+  let rows;
+  if(selected){
+    $("dayLabel").textContent=selected;
+    rows=eventsOn(selected).sort((a,b)=>(a.time||"").localeCompare(b.time||""));
+  } else {
+    $("dayLabel").textContent="UPCOMING";
+    const today=ymd(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+    rows=events.filter(e=>e.date>=today).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).slice(0,40);
+  }
+  if(!rows.length){ list.innerHTML=`<div class="empty">${selected?"Nothing on this day.":"No upcoming items."}</div>`; return; }
+  rows.forEach(e=>{
+    const el=document.createElement("div"); el.className="item";
+    const span = (e.end_date && e.end_date !== e.date) ? `${e.date} → ${e.end_date}` : e.date;
+    const meta=[e.class_name, e.time, e.source].filter(Boolean).join(" · ");
+    el.innerHTML=`<div><div class="t"><span class="badge ${e.kind||"other"}">${e.kind||"item"}</span>${escapeHtml(e.title)}</div>
+      <div class="m">${escapeHtml(span)}${meta?" · "+escapeHtml(meta):""}${e.notes?" · "+escapeHtml(e.notes):""}</div></div>
+      <button class="del" type="button" title="Delete">✕</button>`;
+    el.querySelector(".del").onclick=async()=>{
+      if(!confirm("Delete this item?")) return;
+      await api("/api/calendar/events/"+encodeURIComponent(e.id),{method:"DELETE"});
+      await load();
+    };
+    list.appendChild(el);
+  });
+}
+
+function renderSchool(){
+  const tk=todayKey();
+  if(!schoolDay) schoolDay=tk;
+  const pills=$("schoolPills"); pills.innerHTML="";
+  DAY_KEYS.forEach(code=>{
+    const b=document.createElement("button");
+    b.type="button";
+    b.textContent=DAY_SHORT[code];
+    if(code===schoolDay) b.classList.add("on");
+    if(code===tk) b.classList.add("today-mark");
+    b.onclick=()=>{ schoolDay=code; renderSchool(); };
+    pills.appendChild(b);
+  });
+
+  const isToday=schoolDay===tk;
+  $("schoolHero").textContent=isToday?("TODAY · "+DAY_LABEL[schoolDay]):DAY_LABEL[schoolDay];
+  const dateStr=dateForWeekday(schoolDay);
+  const classes=schedule.filter(s=>s.day===schoolDay).sort((a,b)=>(a.start||"").localeCompare(b.start||""));
+  $("schoolSub").textContent=isToday
+    ?(`${dateStr} · ${classes.length} class${classes.length===1?"":"es"}`)
+    :(`${dateStr} · ${classes.length} class${classes.length===1?"":"es"} this day`);
+
+  const box=$("schoolClasses"); box.innerHTML="";
+  if(!classes.length){
+    box.innerHTML=`<div class="empty">${isToday?"No classes today — free day.":"No classes on this day."}</div>`;
+  } else {
+    classes.forEach(s=>{
+      const row=document.createElement("div"); row.className="class-row";
+      const when=[s.start,s.end].filter(Boolean).join("–")||"TBD";
+      row.innerHTML=`<div class="time-col">${escapeHtml(when)}</div>
+        <div><div class="name">${escapeHtml(s.title)}</div>
+        <div class="meta"><span class="badge class">class</span>${s.notes?escapeHtml(s.notes):"school / university"}</div></div>
+        <button class="del" type="button">✕</button>`;
+      row.querySelector(".del").onclick=async()=>{
+        if(!confirm("Remove this class?")) return;
+        await api("/api/calendar/schedule/"+encodeURIComponent(s.id),{method:"DELETE"});
+        await load();
+      };
+      box.appendChild(row);
+    });
+  }
+
+  const evBox=$("schoolEvents"); evBox.innerHTML="";
+  const dayEvents=eventsOn(dateStr).sort((a,b)=>(a.time||"").localeCompare(b.time||""));
+  if(dayEvents.length){
+    const h=document.createElement("h3");
+    h.style.cssText="font-family:Orbitron;font-size:10px;letter-spacing:2px;color:var(--cyan);margin:8px 0 6px;border-bottom:1px solid var(--line);padding-bottom:3px";
+    h.textContent="HOMEWORK / DUES THIS DAY";
+    evBox.appendChild(h);
+    dayEvents.forEach(e=>{
+      const el=document.createElement("div"); el.className="item";
+      el.innerHTML=`<div><div class="t"><span class="badge ${e.kind||"other"}">${e.kind||"item"}</span>${escapeHtml(e.title)}</div>
+        <div class="m">${e.time?escapeHtml(e.time):"all day"}</div></div>
+        <button class="del" type="button">✕</button>`;
+      el.querySelector(".del").onclick=async()=>{
+        if(!confirm("Delete this item?")) return;
+        await api("/api/calendar/events/"+encodeURIComponent(e.id),{method:"DELETE"});
+        await load();
+      };
+      evBox.appendChild(el);
+    });
+  }
+}
+
+function renderSchedule(){
+  const box=$("schList"); box.innerHTML="";
+  if(!schedule.length){ box.innerHTML=`<div class="empty">No weekly schedule yet.</div>`; return; }
+  DAY_KEYS.forEach(day=>{
+    const items=schedule.filter(s=>s.day===day).sort((a,b)=>(a.start||"").localeCompare(b.start||""));
+    if(!items.length) return;
+    const wrap=document.createElement("div"); wrap.className="sch-day";
+    wrap.innerHTML=`<h3>${DAY_LABEL[day]}</h3>`;
+    const list=document.createElement("div"); list.className="list"; list.style.maxHeight="none";
+    items.forEach(s=>{
+      const el=document.createElement("div"); el.className="item";
+      const when=[s.start,s.end].filter(Boolean).join("–");
+      el.innerHTML=`<div><div class="t"><span class="badge schedule">block</span>${escapeHtml(s.title)}</div>
+        <div class="m">${escapeHtml(when||"all day")}${s.notes?" · "+escapeHtml(s.notes):""}</div></div>
+        <button class="del" type="button">✕</button>`;
+      el.querySelector(".del").onclick=async()=>{
+        if(!confirm("Delete this schedule block?")) return;
+        await api("/api/calendar/schedule/"+encodeURIComponent(s.id),{method:"DELETE"});
+        await load();
+      };
+      list.appendChild(el);
+    });
+    wrap.appendChild(list); box.appendChild(wrap);
+  });
+}
+
+function escapeHtml(s){
+  return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+}
+
+function showTab(which){
+  ["tabCal","tabSchool","tabSch"].forEach(id=>$(id).classList.remove("on"));
+  $("viewCal").style.display="none";
+  $("viewSchool").style.display="none";
+  $("viewSch").style.display="none";
+  if(which==="cal"){ $("tabCal").classList.add("on"); $("viewCal").style.display=""; }
+  if(which==="school"){ $("tabSchool").classList.add("on"); $("viewSchool").style.display=""; schoolDay=todayKey(); renderSchool(); }
+  if(which==="sch"){ $("tabSch").classList.add("on"); $("viewSch").style.display=""; }
+}
+
+$("prevM").onclick=()=>{ viewM--; if(viewM<0){viewM=11;viewY--;} renderMonth(); };
+$("nextM").onclick=()=>{ viewM++; if(viewM>11){viewM=0;viewY++;} renderMonth(); };
+$("showAll").onclick=()=>{ selected=null; renderMonth(); renderEvents(); };
+$("tabCal").onclick=()=>showTab("cal");
+$("tabSchool").onclick=()=>showTab("school");
+$("tabSch").onclick=()=>showTab("sch");
+
+const n=new Date(); viewY=n.getFullYear(); viewM=n.getMonth(); schoolDay=todayKey();
+const back=document.getElementById("backHud"); if(back) back.href=jarvisAuth.withToken("./");
+jarvisAuth.requireAuth().then(ok=>{
+  if(!ok) return;
+  load().catch(e=>{ $("eventList").innerHTML=`<div class="empty">Could not load calendar (${e}).</div>`; });
+});
+setInterval(()=>{
+  // Roll SCHOOL to the real today when the day changes
+  if(schoolDay===null || ($("tabSchool").classList.contains("on") && schoolDay===todayKey())){
+    /* keep */
+  }
+  load().catch(()=>{});
+}, 20000);
+</script>
+</body>
+</html>

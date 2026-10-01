@@ -4,6 +4,7 @@
 server/config/server.yaml
 server/certs/
 server/logs/
+server/data/
 server/hud/audio/
 server/hud/jarvis.cer
 

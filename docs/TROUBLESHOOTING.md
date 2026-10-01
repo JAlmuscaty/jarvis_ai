@@ -4,6 +4,16 @@
 Browsers require a secure context for `getUserMedia`. Trust `certs/cert.pem`
 on the device (see SETUP §3) and use `https://`.
 
+**Chrome: "Your connection is not private" / `ERR_CERT_AUTHORITY_INVALID`** —
+the HUD uses a self-signed cert. On the PC, double-click
+`server/scripts/trust-cert.bat` (or open `certs/cert.pem` / the Certificate
+window → Install Certificate → Current User → Trusted Root Certification
+Authorities). Fully quit and reopen Chrome, then open
+`https://192.168.1.57/hud/`. On iPhone: download `jarvis.cer` from the HUD,
+install the profile, then enable trust under Settings → General → About →
+Certificate Trust Settings. Regenerate SANs anytime with
+`server/.venv/Scripts/python.exe server/scripts/make-certs.py`.
+
 **First connection after server start times out** — the Whisper model warms at
 startup (~40 s). `scripts/jarvis-health.sh` until all rows are OK.
 
@@ -36,8 +46,19 @@ wrapper.
 (macOS only exempts wildcard binds for non-root low ports) and make sure a
 previous instance fully released the port before restarting.
 
-**ElevenLabs quota shows "chars today" instead of a quota bar** — give your
-API key the User → Read permission in the ElevenLabs dashboard.
+**Kokoro shows "offline" in the HUD** — the Kokoro Docker container isn't
+running. Start it with `docker compose -f worker/docker-compose.kokoro.yml up -d`
+and verify with `curl http://127.0.0.1:8880/health`.
+
+**No speech / TTS errors in the HUD** — check that Kokoro is healthy and that
+`voice.base_url` in `server/config/server.yaml` points at
+`http://127.0.0.1:8880/v1`. Test directly:
+```bash
+curl -X POST http://127.0.0.1:8880/v1/audio/speech \
+  -H "Content-Type: application/json" \
+  -d '{"model":"kokoro","input":"Hello","voice":"af_heart","response_format":"pcm","stream":false}' \
+  --output /tmp/test.pcm
+```
 
 **Stop button says stopped but Hermes kept working briefly** — on Hermes
 v0.16, session runs aren't registered in the runs store (`/stop` 404s); the

@@ -1,0 +1,111 @@
+# Allowlisted apps Jarvis may open on the PC (visible Chrome after /browser connect).
+# Add more entries later; restart Hermes gateway to pick up changes.
+#
+# kind:
+#   focus  — bring Chrome to the front (no new URL)
+#   url    — open/focus a tab at the given https URL in the connected Chrome
+
+apps:
+  chrome:
+    kind: focus
+    label: Google Chrome
+  youtube:
+    kind: url
+    url: https://www.youtube.com/
+    label: YouTube
+  whatsapp:
+    kind: url
+    url: https://web.whatsapp.com/
+    label: WhatsApp Web
+  classroom:
+    kind: url
+    url: https://classroom.google.com/
+    label: Google Classroom
+  google_classroom:
+    kind: url
+    url: https://classroom.google.com/
+    label: Google Classroom
+  chatgpt:
+    kind: url
+    url: https://chatgpt.com/
+    label: ChatGPT
+  chat_gpt:
+    kind: url
+    url: https://chatgpt.com/
+    label: ChatGPT
+  openai:
+    kind: url
+    url: https://chatgpt.com/
+    label: ChatGPT
+  vidbox:
+    kind: url
+    url: https://vidbox.cc/
+    label: Vidbox
+  movies:
+    kind: url
+    url: https://vidbox.cc/
+    label: Vidbox Movies
+  movie:
+    kind: url
+    url: https://vidbox.cc/
+    label: Vidbox Movies
+  gmail:
+    kind: url
+    url: https://mail.google.com/
+    label: Gmail
+  google_slides:
+    kind: url
+    url: https://slides.google.com/
+    label: Google Slides
+  slides:
+    kind: url
+    url: https://slides.google.com/
+    label: Google Slides
+  google_docs:
+    kind: url
+    url: https://docs.google.com/document/create
+    label: Google Docs
+  docs:
+    kind: url
+    url: https://docs.google.com/document/create
+    label: Google Docs
+  google_doc:
+    kind: url
+    url: https://docs.google.com/document/create
+    label: Google Docs
+  doc:
+    kind: url
+    url: https://docs.google.com/document/create
+    label: Google Docs
+  google_sheets:
+    kind: url
+    url: https://sheets.google.com/
+    label: Google Sheets
+  sheets:
+    kind: url
+    url: https://sheets.google.com/
+    label: Google Sheets
+  google_drive:
+    kind: url
+    url: https://drive.google.com/
+    label: Google Drive
+  drive:
+    kind: url
+    url: https://drive.google.com/
+    label: Google Drive
+  google_calendar:
+    kind: url
+    url: https://calendar.google.com/
+    label: Google Calendar
+  maps:
+    kind: url
+    url: https://maps.google.com/
+    label: Google Maps
+  notebooklm:
+    kind: url
+    url: https://notebooklm.google.com/
+    label: Google NotebookLM
+  notebook_lm:
+    kind: url
+    url: https://notebooklm.google.com/
+    label: Google NotebookLM

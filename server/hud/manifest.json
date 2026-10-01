@@ -1,0 +1,12 @@
+{
+  "name": "JARVIS",
+  "short_name": "JARVIS",
+  "description": "Hermes voice HUD — Hey Jarvis wake word on iPhone",
+  "start_url": "/hud/",
+  "display": "standalone",
+  "background_color": "#050b14",
+  "theme_color": "#050b14",
+  "orientation": "any",
+  "permissions": ["microphone"],
+  "icons": []
+}

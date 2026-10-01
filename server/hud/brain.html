@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>JARVIS · Second Brain</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#050b14">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050b14; --panel:#0a1624; --line:#123048;
+  --cyan:#00e5ff; --cyan-dim:#0a7f96; --teal:#19f0d8;
+  --txt:#9fd8e8; --txt-dim:#4d7d92; --muted:#2a4558;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%; overflow:hidden; background:var(--bg); color:var(--txt);
+  font-family:'Rajdhani',sans-serif; touch-action:none}
+#app{display:flex; flex-direction:column; height:100%; max-width:100vw}
+
+header{display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
+  padding:8px 12px; border-bottom:1px solid var(--line); background:#081523f2}
+header a{font-family:'Orbitron'; font-size:9px; letter-spacing:2px; color:var(--txt-dim); text-decoration:none}
+header a:hover{color:var(--cyan)}
+header h1{font-family:'Orbitron'; font-size:13px; letter-spacing:4px; color:var(--cyan)}
+header .count{font-size:11px; color:var(--txt-dim); letter-spacing:1px}
+
+#genreBar{
+  display:flex; align-items:center; gap:6px; flex-shrink:0;
+  padding:8px 10px; border-bottom:1px solid var(--line); background:#06101cf2;
+  overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch;
+}
+#genreBar::-webkit-scrollbar{display:none}
+.chip{
+  flex:0 0 auto; border:1px solid var(--line); background:#081523; color:var(--txt-dim);
+  font-family:'Orbitron'; font-size:9px; letter-spacing:1.5px; padding:7px 12px;
+  cursor:pointer; white-space:nowrap; max-width:180px; overflow:hidden; text-overflow:ellipsis;
+}
+.chip.on{color:var(--cyan); border-color:var(--cyan-dim); box-shadow:0 0 10px #00e5ff22}
+.chip .dot{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px; vertical-align:middle}
+.chip.add{color:var(--teal); border-style:dashed; min-width:36px; padding:7px 10px}
+
+#main{flex:1; position:relative; min-height:0; background:var(--bg)}
+#graphCanvas{position:absolute; inset:0; width:100%; height:100%; cursor:grab}
+#graphCanvas.dragging{cursor:grabbing}
+#empty{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  pointer-events:none; text-align:center; padding:24px; color:var(--txt-dim); font-size:14px; line-height:1.5;
+}
+#empty.hide{display:none}
+
+#tooltip{
+  position:fixed; z-index:30; pointer-events:none; display:none;
+  max-width:280px; padding:10px 12px; background:#0a1624f5; border:1px solid var(--cyan-dim);
+  box-shadow:0 4px 24px #000a; font-size:13px; line-height:1.35;
+}
+#tooltip .t{font-family:'Orbitron'; font-size:11px; letter-spacing:1px; color:var(--cyan)}
+body.mobile #tooltip{display:none!important}
+
+#detailSheet{
+  position:fixed; left:0; right:0; bottom:0; z-index:35; display:none;
+  background:#0a1624fa; border-top:1px solid var(--cyan-dim);
+  padding:14px 16px calc(14px + env(safe-area-inset-bottom));
+  max-height:42vh; overflow-y:auto; transform:translateY(100%);
+  transition:transform .22s ease-out;
+}
+#detailSheet.open{display:block; transform:translateY(0)}
+#detailSheet .t{font-family:'Orbitron'; font-size:12px; letter-spacing:2px; color:var(--cyan); margin-bottom:6px; padding-right:28px}
+#detailSheet .purposeTag{display:inline-flex; align-items:center; gap:6px; font-family:'Orbitron'; font-size:9px; letter-spacing:1.5px; padding:3px 8px; border-radius:3px; margin-bottom:8px; text-transform:uppercase}
+#detailSheet .d{font-size:15px; line-height:1.4; color:#cfeefb; white-space:pre-wrap; margin-bottom:12px}
+#detailSheet .close{
+  position:absolute; top:10px; right:12px; background:none; border:none;
+  color:var(--txt-dim); font-size:18px; cursor:pointer; padding:4px 8px;
+}
+#detailSheet .sheetActions{display:flex; gap:8px}
+#detailSheet .btn.edit{color:var(--cyan); border-color:var(--cyan-dim); flex:1}
+#detailSheet .btn.del{
+  color:#ff6b7a; border-color:#7a2a33; background:#240a0e; flex:1;
+}
+#detailSheet .btn.del:hover{background:#3a0e15; box-shadow:0 0 10px #ff4d5e44}
+
+#controls{
+  flex-shrink:0; display:grid; grid-template-columns:1fr auto auto auto;
+  gap:8px; padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+  border-top:1px solid var(--line); background:#081523f2;
+}
+#search{
+  background:#06101c; border:1px solid var(--line); color:#cfeefb;
+  font-family:'Rajdhani'; font-size:15px; padding:9px 12px; outline:none; min-width:0;
+}
+#search:focus{border-color:var(--cyan-dim); box-shadow:0 0 8px #00e5ff33}
+.btn{
+  background:#0a2435; color:var(--cyan); border:1px solid var(--cyan-dim);
+  font-family:'Orbitron'; font-size:9px; letter-spacing:1.5px; padding:9px 12px;
+  cursor:pointer; white-space:nowrap;
+}
+.btn.teal{color:var(--teal); border-color:#1a6e62}
+.btn.danger{color:#ff6b7a; border-color:#7a2a33; background:#240a0e}
+.btn.danger:hover{background:#3a0e15; box-shadow:0 0 10px #ff4d5e44}
+.btn:hover{box-shadow:0 0 10px #00e5ff33}
+
+#modal{
+  position:fixed; inset:0; z-index:50; display:none; align-items:center; justify-content:center;
+  background:#02060ce6; backdrop-filter:blur(3px); padding:16px;
+}
+#modal.open{display:flex}
+.modalBox{
+  width:min(400px,100%); background:var(--panel); border:1px solid var(--line);
+  padding:16px; max-height:90vh; overflow-y:auto;
+}
+.modalBox h2{font-family:'Orbitron'; font-size:12px; letter-spacing:3px; color:var(--cyan); margin-bottom:12px}
+.field{margin-bottom:10px}
+.field label{display:block; font-size:11px; letter-spacing:1px; color:var(--txt-dim); margin-bottom:4px}
+.field input,.field textarea,.field select{
+  width:100%; background:#06101c; border:1px solid var(--line); color:#cfeefb;
+  font-family:'Rajdhani'; font-size:15px; padding:8px 10px; outline:none;
+}
+.field textarea{min-height:72px; resize:vertical}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--cyan-dim)}
+.linkPick{max-height:120px; overflow-y:auto; border:1px solid var(--line); padding:6px; background:#06101c}
+.linkPick label{display:flex; gap:8px; align-items:center; font-size:13px; padding:4px 2px; cursor:pointer}
+.modalActions{display:flex; gap:8px; margin-top:14px}
+.modalActions .btn{flex:1}
+.err{color:#ff6b7a; font-size:12px; margin-top:8px; min-height:1em}
+
+@media (min-width:700px){
+  #app{max-width:100%}
+  #controls{grid-template-columns:1fr auto auto auto; padding-left:16px; padding-right:16px}
+  header{padding-left:16px; padding-right:16px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <a href="./" id="backHud">← HUD</a>
+    <h1>SECOND BRAIN</h1>
+    <span class="count" id="counts">—</span>
+  </header>
+
+  <div id="genreBar">
+    <button type="button" class="chip on" data-genre="">ALL</button>
+    <button type="button" class="chip add" id="btnAddGenre" title="Add genre">+</button>
+  </div>
+
+  <div id="main">
+    <canvas id="graphCanvas"></canvas>
+    <div id="empty">No ideas yet.<br>Use <b>+ GENRE</b> and <b>+ IDEA</b> below to start your graph.</div>
+    <div id="tooltip"><div class="t"></div></div>
+  </div>
+
+  <div id="detailSheet">
+    <button type="button" class="close" id="sheetClose">✕</button>
+    <div class="t" id="sheetTitle"></div>
+    <div class="purposeTag" id="sheetPurpose" style="display:none"></div>
+    <div class="d" id="sheetDesc"></div>
+    <div class="sheetActions">
+      <button type="button" class="btn edit" id="sheetEdit">EDIT</button>
+      <button type="button" class="btn del" id="sheetDelete">DELETE</button>
+    </div>
+  </div>
+
+  <div id="controls">
+    <input id="search" type="search" placeholder="Search ideas…" autocomplete="off">
+    <button type="button" class="btn" id="btnAddGenre2">+ GENRE</button>
+    <button type="button" class="btn teal" id="btnAddIdea">+ IDEA</button>
+    <button type="button" class="btn danger" id="btnClearAll" title="Delete all ideas">CLEAR ALL</button>
+  </div>
+</div>
+
+<div id="modal">
+  <div class="modalBox">
+    <h2 id="modalTitle">ADD GENRE</h2>
+    <div id="modalBody"></div>
+    <div class="err" id="modalErr"></div>
+    <div class="modalActions">
+      <button type="button" class="btn" id="modalCancel">CANCEL</button>
+      <button type="button" class="btn teal" id="modalOk">SAVE</button>
+    </div>
+  </div>
+</div>
+
+<script src="/hud/jarvis-auth.js"></script>
+<script>
+"use strict";
+
+const $ = id => document.getElementById(id);
+const IS_MOBILE = matchMedia("(hover: none), (pointer: coarse)").matches;
+if (IS_MOBILE) document.body.classList.add("mobile");
+
+let genres = [], ideas = [], links = [];
+let activeGenre = "";
+let searchQ = "";
+let modalMode = null;
+let selectedIdeaId = null;
+let editingIdeaId = null;
+
+function openDetailSheet(node) {
+  if (!node) return;
+  selectedIdeaId = node.id;
+  graph.selectedId = node.id;
+  $("sheetTitle").textContent = node.title;
+  $("sheetDesc").textContent = node.description || "No description yet.";
+
+  const pTag = $("sheetPurpose");
+  const g = node.genre_id ? graph.genreMap[node.genre_id] : null;
+  const col = node.color || (g ? g.color : "var(--cyan)");
+  const pName = node.purpose_name || (g ? g.name : "IDEA");
+  const icon = node.icon || (g ? g.icon : "💡");
+
+  pTag.style.display = "inline-flex";
+  pTag.style.alignItems = "center";
+  pTag.style.gap = "6px";
+  pTag.style.color = col;
+  pTag.style.borderColor = col + "66";
+  pTag.style.background = col + "18";
+  pTag.style.boxShadow = `0 0 10px ${col}33`;
+  pTag.innerHTML = `<span style="font-size:12px">${icon}</span> <span>${escapeHtml(pName)}</span>`;
+
+  $("detailSheet").classList.add("open");
+  $("tooltip").style.display = "none";
+}
+
+function closeDetailSheet() {
+  $("detailSheet").classList.remove("open");
+  selectedIdeaId = null;
+  graph.selectedId = null;
+}
+
+async function deleteSelectedIdea() {
+  if (!selectedIdeaId) return;
+  const node = graph.nodes.find(n => n.id === selectedIdeaId);
+  const label = node ? node.title : "this idea";
+  if (!confirm(`Delete "${label}"? Links to it will be removed too.`)) return;
+  try {
+    await api("/api/brain/ideas/" + encodeURIComponent(selectedIdeaId), { method: "DELETE" });
+    closeDetailSheet();
+    await load();
+  } catch (e) {
+    alert(e.message || String(e));
+  }
+}
+
+async function clearAllIdeas() {
+  const n = ideas.length;
+  if (!n) {
+    alert("No ideas to delete.");
+    return;
+  }
+  if (!confirm(`Delete ALL ${n} idea${n === 1 ? "" : "s"} from Second Brain?\nThis cannot be undone. Genres stay.`)) return;
+  if (!confirm("Really clear every idea? Type OK by confirming again.")) return;
+  try {
+    await api("/api/brain/ideas/clear", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirm: true }),
+    });
+    closeDetailSheet();
+    await load();
+  } catch (e) {
+    alert(e.message || String(e));
+  }
+}
+
+function linkedIdsFor(ideaId) {
+  const ids = new Set();
+  links.forEach(l => {
+    if (l.from_id === ideaId) ids.add(l.to_id);
+    if (l.to_id === ideaId) ids.add(l.from_id);
+  });
+  return ids;
+}
+
+const PURPOSE_MAP = {
+  work: { name: "Work & Business", color: "#2979ff", icon: "💼" },
+  study: { name: "Study & Learning", color: "#b388ff", icon: "📚" },
+  creative: { name: "Creative & Projects", color: "#ffd600", icon: "💡" },
+  personal: { name: "Personal & Health", color: "#00e676", icon: "🌱" },
+  urgent: { name: "Urgent & Deadlines", color: "#ff1744", icon: "🔥" },
+  tech: { name: "Tech & Engineering", color: "#00e5ff", icon: "⚡" },
+  finance: { name: "Finance & Wealth", color: "#76ff03", icon: "💰" },
+  notes: { name: "Sparks & Thoughts", color: "#ff4081", icon: "✨" },
+  media: { name: "Media & Entertainment", color: "#ff9100", icon: "🎬" },
+};
+
+function getPurposeOpts(selected) {
+  return Object.entries(PURPOSE_MAP).map(([pid, p]) =>
+    `<option value="${pid}"${selected === pid ? " selected" : ""}>${p.icon} ${p.name}</option>`
+  ).join("");
+}
+
+function updatePurposeBar() {
+  const sel = $("fIdeaPurpose");
+  const bar = $("purposeColorBar");
+  if (!sel || !bar) return;
+  const p = PURPOSE_MAP[sel.value] || PURPOSE_MAP.notes;
+  bar.style.background = p.color;
+  bar.style.boxShadow = `0 0 10px ${p.color}88`;
+}
+
+function openEditIdea() {
+  if (!selectedIdeaId) return;
+  const idea = ideas.find(i => i.id === selectedIdeaId);
+  if (!idea) return;
+  editingIdeaId = idea.id;
+  const linked = linkedIdsFor(idea.id);
+  const genreOpts = `<option value="">— none —</option>` +
+    genres.map(g => `<option value="${g.id}">${escapeHtml(g.name)}</option>`).join("");
+  const others = ideas.filter(i => i.id !== idea.id);
+  const linkOpts = others.length
+    ? others.map(i => {
+        const chk = linked.has(i.id) ? " checked" : "";
+        return `<label><input type="checkbox" value="${i.id}"${chk}> ${escapeHtml(i.title)}</label>`;
+      }).join("")
+    : `<span style="color:var(--txt-dim);font-size:12px">No other ideas to link</span>`;
+  const currPurpose = idea.purpose || "notes";
+  openModal("EDIT IDEA", `
+    <div class="field"><label>Title</label><input id="fIdeaTitle" maxlength="160"></div>
+    <div class="field"><label>Description / Notes</label><textarea id="fIdeaDesc"></textarea></div>
+    <div class="field">
+      <label>Purpose &amp; Distinct Color</label>
+      <select id="fIdeaPurpose" onchange="updatePurposeBar()">${getPurposeOpts(currPurpose)}</select>
+      <div id="purposeColorBar" style="height:5px;border-radius:2px;margin-top:4px;background:#ff4081"></div>
+    </div>
+    <div class="field"><label>Genre / Notebook</label><select id="fIdeaGenre">${genreOpts}</select></div>
+    <div class="field"><label>Link to other ideas</label><div class="linkPick" id="fIdeaLinks">${linkOpts}</div></div>
+  `, "edit-idea");
+  $("fIdeaTitle").value = idea.title;
+  $("fIdeaDesc").value = idea.description || "";
+  $("fIdeaGenre").value = idea.genre_id || "";
+  $("fIdeaPurpose").value = currPurpose;
+  updatePurposeBar();
+  $("fIdeaTitle").focus();
+}
+
+async function api(path, opts) {
+  return jarvisAuth.api(path, opts);
+}
+
+async function load() {
+  const j = await api("/api/brain");
+  genres = j.genres || [];
+  ideas = j.ideas || [];
+  links = j.links || [];
+  $("counts").textContent = `${ideas.length} ideas · ${genres.length} genres`;
+  renderGenreBar();
+  graph.setData(genres, ideas, links);
+  graph.setFilter(activeGenre, searchQ);
+  $("empty").classList.toggle("hide", ideas.length > 0);
+}
+
+function renderGenreBar() {
+  const bar = $("genreBar");
+  bar.innerHTML = "";
+  const all = document.createElement("button");
+  all.type = "button";
+  all.className = "chip" + (activeGenre === "" ? " on" : "");
+  all.dataset.genre = "";
+  all.textContent = "ALL";
+  all.onclick = () => selectGenre("");
+  bar.appendChild(all);
+  genres.forEach(g => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip" + (activeGenre === g.id ? " on" : "");
+    b.dataset.genre = g.id;
+    b.innerHTML = `<span class="dot" style="background:${g.color}"></span>${escapeHtml(g.name)}`;
+    b.onclick = () => selectGenre(g.id);
+    bar.appendChild(b);
+  });
+  const add = document.createElement("button");
+  add.type = "button";
+  add.className = "chip add";
+  add.textContent = "+";
+  add.title = "Add genre";
+  add.onclick = openAddGenre;
+  bar.appendChild(add);
+}
+
+function selectGenre(id) {
+  activeGenre = id;
+  renderGenreBar();
+  graph.setFilter(activeGenre, searchQ);
+}
+
+function escapeHtml(s) {
+  return String(s || "").replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[c]));
+}
+
+/* ---- Obsidian-style force graph (Jarvis colors) ---- */
+class BrainGraph {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext("2d");
+    this.nodes = [];
+    this.edges = [];
+    this.genreMap = {};
+    this.filterGenre = "";
+    this.searchQ = "";
+    this.hoverId = null;
+    this.selectedId = null;
+    this.dragNode = null;
+    this.panning = false;
+    this._pressNode = null;
+    this._pressMoved = false;
+    this.zoom = 1;
+    this.panX = 0;
+    this.panY = 0;
+    this.lastX = 0;
+    this.lastY = 0;
+    this.pinches = null;
+    this.simAlpha = 1;
+    this.running = true;
+    this._bind();
+    this._resize();
+    this._loop();
+  }
+
+  setData(genres, ideas, links) {
+    this.genreMap = Object.fromEntries(genres.map(g => [g.id, g]));
+    const degree = {};
+    ideas.forEach(i => { degree[i.id] = 0; });
+    links.forEach(l => {
+      if (degree[l.from_id] != null) degree[l.from_id]++;
+      if (degree[l.to_id] != null) degree[l.to_id]++;
+    });
+    const oldPos = Object.fromEntries(this.nodes.map(n => [n.id, { x: n.x, y: n.y }]));
+    this.nodes = ideas.map((idea, idx) => {
+      const g = idea.genre_id ? this.genreMap[idea.genre_id] : null;
+      const deg = degree[idea.id] || 0;
+      const prev = oldPos[idea.id];
+      const angle = (idx / Math.max(ideas.length, 1)) * Math.PI * 2;
+      const r = 80 + idx * 8;
+      const pColor = (idea.purpose && PURPOSE_MAP[idea.purpose]) ? PURPOSE_MAP[idea.purpose].color : null;
+      const col = idea.color || pColor || (g ? g.color : "#00e5ff");
+      const icon = idea.icon || (idea.purpose && PURPOSE_MAP[idea.purpose] ? PURPOSE_MAP[idea.purpose].icon : (g ? g.icon : "💡"));
+      const pName = idea.purpose_name || (idea.purpose && PURPOSE_MAP[idea.purpose] ? PURPOSE_MAP[idea.purpose].name : (g ? g.name : "Idea"));
+      return {
+        id: idea.id,
+        title: idea.title,
+        description: idea.description || "",
+        genre_id: idea.genre_id,
+        purpose: idea.purpose || (g ? g.purpose : null),
+        purpose_name: pName,
+        icon: icon,
+        color: col,
+        deg,
+        r: 5 + Math.min(Math.sqrt(deg) * 2.5, 16),
+        x: prev ? prev.x : Math.cos(angle) * r,
+        y: prev ? prev.y : Math.sin(angle) * r,
+        vx: 0, vy: 0,
+      };
+    });
+    this.edges = links.map(l => ({
+      id: l.id,
+      source: l.from_id,
+      target: l.to_id,
+    }));
+    this.simAlpha = 1;
+  }
+
+  setFilter(genreId, search) {
+    this.filterGenre = genreId || "";
+    this.searchQ = (search || "").trim().toLowerCase();
+  }
+
+  _visibleNodes() {
+    let nodes = this.nodes;
+    if (this.filterGenre) {
+      const ids = new Set(
+        nodes.filter(n => n.genre_id === this.filterGenre).map(n => n.id)
+      );
+      this.edges.forEach(e => {
+        if (ids.has(e.source)) ids.add(e.target);
+        if (ids.has(e.target)) ids.add(e.source);
+      });
+      nodes = nodes.filter(n => ids.has(n.id));
+    }
+    if (this.searchQ) {
+      const match = new Set(
+        nodes.filter(n =>
+          n.title.toLowerCase().includes(this.searchQ) ||
+          (n.description || "").toLowerCase().includes(this.searchQ)
+        ).map(n => n.id)
+      );
+      this.edges.forEach(e => {
+        if (match.has(e.source)) match.add(e.target);
+        if (match.has(e.target)) match.add(e.source);
+      });
+      nodes = nodes.filter(n => match.has(n.id));
+    }
+    return new Set(nodes.map(n => n.id));
+  }
+
+  _resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const rect = this.canvas.parentElement.getBoundingClientRect();
+    this.w = rect.width;
+    this.h = rect.height;
+    this.canvas.width = this.w * dpr;
+    this.canvas.height = this.h * dpr;
+    this.canvas.style.width = this.w + "px";
+    this.canvas.style.height = this.h + "px";
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.cx = this.w / 2;
+    this.cy = this.h / 2;
+  }
+
+  _screenToWorld(sx, sy) {
+    return {
+      x: (sx - this.cx - this.panX) / this.zoom,
+      y: (sy - this.cy - this.panY) / this.zoom,
+    };
+  }
+
+  _nodeAt(wx, wy) {
+    let hit = null, best = 999;
+    for (const n of this.nodes) {
+      const dx = n.x - wx, dy = n.y - wy;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      const pad = n.r + 6;
+      if (d < pad && d < best) { hit = n; best = d; }
+    }
+    return hit;
+  }
+
+  _simulate(visible) {
+    if (this.simAlpha < 0.01) return;
+    const nodes = this.nodes.filter(n => visible.has(n.id));
+    const nodeById = Object.fromEntries(this.nodes.map(n => [n.id, n]));
+    const k = 0.02 * this.simAlpha;
+    const repulse = -120 * this.simAlpha;
+    const center = 0.015 * this.simAlpha;
+
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i], b = nodes[j];
+        let dx = b.x - a.x, dy = b.y - a.y;
+        let dist = Math.sqrt(dx * dx + dy * dy) || 0.1;
+        const f = repulse / (dist * dist);
+        dx = (dx / dist) * f; dy = (dy / dist) * f;
+        if (this.dragNode !== a) { a.vx -= dx; a.vy -= dy; }
+        if (this.dragNode !== b) { b.vx += dx; b.vy += dy; }
+      }
+    }
+
+    this.edges.forEach(e => {
+      if (!visible.has(e.source) || !visible.has(e.target)) return;
+      const a = nodeById[e.source], b = nodeById[e.target];
+      if (!a || !b) return;
+      let dx = b.x - a.x, dy = b.y - a.y;
+      let dist = Math.sqrt(dx * dx + dy * dy) || 0.1;
+      const want = 90;
+      const f = (dist - want) * k;
+      dx = (dx / dist) * f; dy = (dy / dist) * f;
+      if (this.dragNode !== a) { a.vx += dx; a.vy += dy; }
+      if (this.dragNode !== b) { b.vx -= dx; b.vy -= dy; }
+    });
+
+    nodes.forEach(n => {
+      if (this.dragNode === n) return;
+      n.vx -= n.x * center;
+      n.vy -= n.y * center;
+      n.vx *= 0.88;
+      n.vy *= 0.88;
+      n.x += n.vx;
+      n.y += n.vy;
+    });
+
+    this.simAlpha *= 0.992;
+  }
+
+  _draw() {
+    const ctx = this.ctx;
+    const visible = this._visibleNodes();
+    const highlight = new Set();
+    if (this.hoverId) {
+      highlight.add(this.hoverId);
+      this.edges.forEach(e => {
+        if (e.source === this.hoverId) highlight.add(e.target);
+        if (e.target === this.hoverId) highlight.add(e.source);
+      });
+    }
+    if (this.selectedId) {
+      highlight.add(this.selectedId);
+      this.edges.forEach(e => {
+        if (e.source === this.selectedId) highlight.add(e.target);
+        if (e.target === this.selectedId) highlight.add(e.source);
+      });
+    }
+    const dim = (this.hoverId || this.selectedId) && !IS_MOBILE;
+
+    ctx.fillStyle = "#050b14";
+    ctx.fillRect(0, 0, this.w, this.h);
+
+    ctx.save();
+    ctx.translate(this.cx + this.panX, this.cy + this.panY);
+    ctx.scale(this.zoom, this.zoom);
+
+    const nodeById = Object.fromEntries(this.nodes.map(n => [n.id, n]));
+
+    this.edges.forEach(e => {
+      if (!visible.has(e.source) || !visible.has(e.target)) return;
+      const a = nodeById[e.source], b = nodeById[e.target];
+      if (!a || !b) return;
+      const lit = highlight.has(e.source) && highlight.has(e.target);
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.strokeStyle = lit ? "rgba(0,229,255,0.55)" : "rgba(77,125,146,0.35)";
+      ctx.lineWidth = lit ? 1.4 : 1;
+      ctx.stroke();
+    });
+
+    const fadeZoom = this.zoom < 0.55 ? 0 : Math.min(1, (this.zoom - 0.45) / 0.35);
+
+    this.nodes.forEach(n => {
+      if (!visible.has(n.id)) return;
+      const lit = !dim || highlight.has(n.id);
+      const alpha = lit ? 1 : 0.12;
+      const isHover = n.id === this.hoverId;
+      const isSel = n.id === this.selectedId;
+
+      ctx.globalAlpha = alpha;
+      // Ambient colored glow for all visible nodes
+      if (lit) {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r + 4, 0, Math.PI * 2);
+        ctx.fillStyle = (n.color || "#00e5ff") + "24";
+        ctx.fill();
+      }
+      if (isHover || isSel) {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r + 7, 0, Math.PI * 2);
+        ctx.fillStyle = (n.color || "#00e5ff") + "48";
+        ctx.fill();
+      }
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      ctx.fillStyle = n.color || "#4d7d92";
+      ctx.fill();
+      if (isSel) {
+        ctx.strokeStyle = n.color || "#00e5ff";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      if (fadeZoom > 0.05 && lit) {
+        const labelAlpha = fadeZoom * (lit ? 1 : 0.15);
+        ctx.globalAlpha = labelAlpha;
+        ctx.font = "500 11px Rajdhani, sans-serif";
+        ctx.fillStyle = "#9fd8e8";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        const label = n.title.length > 28 ? n.title.slice(0, 26) + "…" : n.title;
+        ctx.fillText(label, n.x, n.y + n.r + 3);
+        ctx.globalAlpha = 1;
+      }
+    });
+
+    ctx.restore();
+  }
+
+  _loop() {
+    if (!this.running) return;
+    const visible = this._visibleNodes();
+    this._simulate(visible);
+    this._draw();
+    requestAnimationFrame(() => this._loop());
+  }
+
+  _bind() {
+    window.addEventListener("resize", () => this._resize());
+
+    this.canvas.addEventListener("wheel", e => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? 0.92 : 1.08;
+      const mx = e.offsetX, my = e.offsetY;
+      const wx = (mx - this.cx - this.panX) / this.zoom;
+      const wy = (my - this.cy - this.panY) / this.zoom;
+      this.zoom = Math.max(0.2, Math.min(4, this.zoom * delta));
+      this.panX = mx - this.cx - wx * this.zoom;
+      this.panY = my - this.cy - wy * this.zoom;
+    }, { passive: false });
+
+    this.canvas.addEventListener("mousedown", e => {
+      const w = this._screenToWorld(e.offsetX, e.offsetY);
+      const n = this._nodeAt(w.x, w.y);
+      this._pressNode = n;
+      this._pressMoved = false;
+      if (n) {
+        this.dragNode = n;
+        this.simAlpha = Math.max(this.simAlpha, 0.3);
+      } else {
+        this.panning = true;
+        this.canvas.classList.add("dragging");
+        closeDetailSheet();
+      }
+      this.lastX = e.clientX;
+      this.lastY = e.clientY;
+    });
+
+    window.addEventListener("mousemove", e => {
+      const rect = this.canvas.getBoundingClientRect();
+      const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+      const w = this._screenToWorld(sx, sy);
+
+      if (Math.abs(e.clientX - this.lastX) + Math.abs(e.clientY - this.lastY) > 8) {
+        this._pressMoved = true;
+      }
+
+      if (this.dragNode) {
+        this.dragNode.x = w.x;
+        this.dragNode.y = w.y;
+        this.dragNode.vx = 0;
+        this.dragNode.vy = 0;
+        return;
+      }
+      if (this.panning) {
+        this.panX += e.clientX - this.lastX;
+        this.panY += e.clientY - this.lastY;
+        this.lastX = e.clientX;
+        this.lastY = e.clientY;
+        return;
+      }
+
+      if (!IS_MOBILE) {
+        const n = this._nodeAt(w.x, w.y);
+        this.hoverId = n ? n.id : null;
+        const tip = $("tooltip");
+        if (n) {
+          tip.style.display = "block";
+          tip.querySelector(".t").textContent = n.title;
+          tip.style.left = Math.min(e.clientX + 14, window.innerWidth - 220) + "px";
+          tip.style.top = Math.min(e.clientY + 14, window.innerHeight - 48) + "px";
+        } else {
+          tip.style.display = "none";
+        }
+      }
+    });
+
+    window.addEventListener("mouseup", () => {
+      if (this._pressNode && !this._pressMoved) {
+        openDetailSheet(this._pressNode);
+      }
+      this.dragNode = null;
+      this._pressNode = null;
+      this.panning = false;
+      this.canvas.classList.remove("dragging");
+    });
+
+    this.canvas.addEventListener("touchstart", e => {
+      if (e.touches.length === 2) {
+        this.pinches = {
+          d: Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          ),
+          zoom: this.zoom,
+        };
+        return;
+      }
+      const t = e.touches[0];
+      const rect = this.canvas.getBoundingClientRect();
+      const sx = t.clientX - rect.left, sy = t.clientY - rect.top;
+      const w = this._screenToWorld(sx, sy);
+      const n = this._nodeAt(w.x, w.y);
+      this._touchNode = n;
+      this._touchMoved = false;
+      this.lastX = t.clientX;
+      this.lastY = t.clientY;
+      if (!n) {
+        this.panning = true;
+        closeDetailSheet();
+      }
+    }, { passive: true });
+
+    this.canvas.addEventListener("touchmove", e => {
+      if (e.touches.length === 2 && this.pinches) {
+        const d = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        this.zoom = Math.max(0.2, Math.min(4, this.pinches.zoom * (d / this.pinches.d)));
+        return;
+      }
+      const t = e.touches[0];
+      if (Math.abs(t.clientX - this.lastX) + Math.abs(t.clientY - this.lastY) > 8) {
+        this._touchMoved = true;
+      }
+      if (this.panning) {
+        this.panX += t.clientX - this.lastX;
+        this.panY += t.clientY - this.lastY;
+        this.lastX = t.clientX;
+        this.lastY = t.clientY;
+      }
+    }, { passive: true });
+
+    this.canvas.addEventListener("touchend", e => {
+      if (this.pinches && e.touches.length < 2) this.pinches = null;
+      if (!this._touchMoved && this._touchNode) {
+        openDetailSheet(this._touchNode);
+      }
+      this.panning = false;
+      this._touchNode = null;
+    });
+  }
+}
+
+const graph = new BrainGraph($("graphCanvas"));
+
+$("sheetClose").onclick = closeDetailSheet;
+$("sheetEdit").onclick = openEditIdea;
+$("sheetDelete").onclick = deleteSelectedIdea;
+$("btnClearAll").onclick = clearAllIdeas;
+
+$("search").oninput = e => {
+  searchQ = e.target.value;
+  graph.setFilter(activeGenre, searchQ);
+};
+
+function openModal(title, bodyHtml, mode) {
+  modalMode = mode;
+  $("modalTitle").textContent = title;
+  $("modalBody").innerHTML = bodyHtml;
+  $("modalErr").textContent = "";
+  $("modal").classList.add("open");
+}
+
+function closeModal() {
+  $("modal").classList.remove("open");
+  modalMode = null;
+  editingIdeaId = null;
+}
+
+$("modalCancel").onclick = closeModal;
+
+function setIdeaPurpose(pid) {
+  const sel = $("fIdeaPurpose");
+  if (sel) {
+    sel.value = pid;
+    updatePurposeBar();
+  }
+  const select = $("fIdeaGenre");
+  if (!select) return;
+  const target = genres.find(g => (g.purpose === pid) || (g.name.toLowerCase().includes(pid)));
+  if (target) {
+    select.value = target.id;
+  }
+}
+
+function openAddGenre() {
+  const swatches = [
+    { p: "work", c: "#2979ff", l: "Work" },
+    { p: "study", c: "#b388ff", l: "Study" },
+    { p: "creative", c: "#ffd600", l: "Creative" },
+    { p: "personal", c: "#00e676", l: "Health" },
+    { p: "urgent", c: "#ff1744", l: "Urgent" },
+    { p: "tech", c: "#00e5ff", l: "Tech" },
+    { p: "finance", c: "#76ff03", l: "Finance" },
+    { p: "notes", c: "#ff4081", l: "Sparks" },
+    { p: "media", c: "#ff9100", l: "Media" },
+  ];
+  const swatchHtml = swatches.map(s => `
+    <button type="button" style="width:28px; height:28px; border-radius:50%; background:${s.c}; border:2px solid #081523; cursor:pointer;" title="${s.l}" onclick="$('fGenreColor').value='${s.c}'; $('fGenreName').placeholder='e.g. ${s.l} notes';"></button>
+  `).join("");
+
+  openModal("ADD PURPOSE / GENRE", `
+    <div class="field"><label>Genre Name</label>
+    <input id="fGenreName" placeholder="e.g. Study &amp; Learning, Work, Fitness…" maxlength="120"></div>
+    <div class="field"><label>Purpose Color (Click to select)</label>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0 10px;">${swatchHtml}</div>
+      <input type="color" id="fGenreColor" value="#00e5ff" style="height:38px; cursor:pointer; padding:2px;">
+    </div>
+  `, "genre");
+  $("fGenreName").focus();
+}
+
+function openAddIdea() {
+  const genreOpts = `<option value="">— none —</option>` +
+    genres.map(g => `<option value="${g.id}">${escapeHtml(g.name)}</option>`).join("");
+  const linkOpts = ideas.length
+    ? ideas.map(i => `<label><input type="checkbox" value="${i.id}"> ${escapeHtml(i.title)}</label>`).join("")
+    : `<span style="color:var(--txt-dim);font-size:12px">No other ideas yet</span>`;
+
+  const purposeChips = `
+    <div style="display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 10px;">
+      <button type="button" class="btn" style="padding:4px 8px; font-size:9px; border-color:#2979ff; color:#2979ff;" onclick="setIdeaPurpose('work')">💼 Work</button>
+      <button type="button" class="btn" style="padding:4px 8px; font-size:9px; border-color:#b388ff; color:#b388ff;" onclick="setIdeaPurpose('study')">📚 Study</button>
+      <button type="button" class="btn" style="padding:4px 8px; font-size:9px; border-color:#ffd600; color:#ffd600;" onclick="setIdeaPurpose('creative')">💡 Creative</button>
+      <button type="button" class="btn" style="padding:4px 8px; font-size:9px; border-color:#00e676; color:#00e676;" onclick="setIdeaPurpose('personal')">🌱 Health</button>
+      <button type="button" class="btn" style="padding:4px 8px; font-size:9px; border-color:#ff1744; color:#ff1744;" onclick="setIdeaPurpose('urgent')">🔥 Urgent</button>
+      <button type="button" class="btn" style="padding:4px 8px; font-size:9px; border-color:#00e5ff; color:#00e5ff;" onclick="setIdeaPurpose('tech')">⚡ Tech</button>
+      <button type="button" class="btn" style="padding:4px 8px; font-size:9px; border-color:#76ff03; color:#76ff03;" onclick="setIdeaPurpose('finance')">💰 Finance</button>
+      <button type="button" class="btn" style="padding:4px 8px; font-size:9px; border-color:#ff4081; color:#ff4081;" onclick="setIdeaPurpose('notes')">✨ Sparks</button>
+      <button type="button" class="btn" style="padding:4px 8px; font-size:9px; border-color:#ff9100; color:#ff9100;" onclick="setIdeaPurpose('media')">🎬 Media</button>
+    </div>
+  `;
+
+  openModal("ADD IDEA / NOTE", `
+    <div class="field"><label>Title</label><input id="fIdeaTitle" maxlength="160" placeholder="Idea or note title"></div>
+    <div class="field"><label>Quick Purpose</label>${purposeChips}</div>
+    <div class="field">
+      <label>Purpose &amp; Distinct Color</label>
+      <select id="fIdeaPurpose" onchange="updatePurposeBar()">${getPurposeOpts('notes')}</select>
+      <div id="purposeColorBar" style="height:5px;border-radius:2px;margin-top:4px;background:#ff4081"></div>
+    </div>
+    <div class="field"><label>Description / Notes</label><textarea id="fIdeaDesc" placeholder="Details, thoughts, links…"></textarea></div>
+    <div class="field"><label>Genre / Purpose Category</label><select id="fIdeaGenre">${genreOpts}</select></div>
+    <div class="field"><label>Link to existing ideas</label><div class="linkPick" id="fIdeaLinks">${linkOpts}</div></div>
+  `, "idea");
+  updatePurposeBar();
+  if (activeGenre) $("fIdeaGenre").value = activeGenre;
+  $("fIdeaTitle").focus();
+}
+
+$("btnAddGenre").onclick = openAddGenre;
+$("btnAddGenre2").onclick = openAddGenre;
+$("btnAddIdea").onclick = openAddIdea;
+
+$("modalOk").onclick = async () => {
+  $("modalErr").textContent = "";
+  try {
+    if (modalMode === "genre") {
+      const name = $("fGenreName").value.trim();
+      const color = $("fGenreColor") ? $("fGenreColor").value : null;
+      if (!name) throw new Error("Name required");
+      await api("/api/brain/genres", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, color }),
+      });
+    } else if (modalMode === "idea" || modalMode === "edit-idea") {
+      const title = $("fIdeaTitle").value.trim();
+      if (!title) throw new Error("Title required");
+      const link_ids = [...document.querySelectorAll("#fIdeaLinks input:checked")].map(el => el.value);
+      const payload = {
+        title,
+        description: $("fIdeaDesc").value.trim() || null,
+        genre_id: $("fIdeaGenre").value || null,
+        purpose: $("fIdeaPurpose") ? $("fIdeaPurpose").value : null,
+        color: $("fIdeaPurpose") && PURPOSE_MAP[$("fIdeaPurpose").value] ? PURPOSE_MAP[$("fIdeaPurpose").value].color : null,
+        link_ids,
+      };
+      if (modalMode === "edit-idea") {
+        payload.id = editingIdeaId;
+        payload.sync_links = true;
+      }
+      await api("/api/brain/ideas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      closeDetailSheet();
+    }
+    closeModal();
+    await load();
+  } catch (e) {
+    $("modalErr").textContent = e.message || String(e);
+  }
+};
+
+const backB = document.getElementById("backHud"); if (backB) backB.href = jarvisAuth.withToken("./");
+jarvisAuth.requireAuth().then(ok => {
+  if (!ok) return;
+  load().catch(e => {
+    $("empty").innerHTML = `Could not load brain graph.<br><span style="color:#ff6b7a">${escapeHtml(e.message || e)}</span>`;
+  });
+});
+</script>
+</body>
+</html>
